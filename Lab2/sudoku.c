@@ -1,6 +1,7 @@
 #include "sudoku.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "preprocess.c"
 
 int*** StackBoards;
 int capacity;
@@ -129,7 +130,7 @@ void ShowPossibilityMatrix(int*** poss)
      {
          for (j=0; j<SIZE; j++)
          {
-             printf("[");
+             printf("[ %d :",poss[i][j][0]);
              for (k=1; k<=SIZE;k++)
              {
                   if (poss[i][j][k])
@@ -278,6 +279,12 @@ int** solveSudoku(int** board)
     printf("Size: %d\n",SIZE);
     int*** Possibilities= GetPossibilityMatrix(board);
     ShowPossibilityMatrix(Possibilities);
+    ShowBoard(board);
+    printf("Giving it to Faran\n");
+    board = FaranPart(Possibilities);
+
+    printf("Faran completed\n");
+    ShowBoard(board);
     board = DFSPart(board);
     return board;
 }

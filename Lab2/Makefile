@@ -1,7 +1,7 @@
 all: sudoku
-	./sudoku 2 f1.txt
+	./sudoku 1 f1.txt
 
-sudoku: sudoku.c
+sudoku: sudoku.c preprocess.c
 	gcc main.c sudoku.c -O3 -fopenmp -o sudoku
 
 debug: sudoku.c 
