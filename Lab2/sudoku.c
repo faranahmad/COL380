@@ -24,13 +24,14 @@ int CheckFinished(int** board)
 
 int** AllocBoard(int type)
 {
-    if ((capacity>presentnumber) && (type==0))
+    if ((capacity>=presentnumber) && (type==0))
     {
         presentnumber+=1;
         return StackBoards[presentnumber-1];
     }
     else
     {
+        printf("Allocating from stack\n");
         int ** y= malloc(SIZE*sizeof(int*));
         int k;
         for (k=0; k<SIZE;k++)
@@ -52,22 +53,18 @@ void CopyBoard(int** srcboard,int** destboard)
             destboard[i][j]=srcboard[i][j];
         }
     }
-    // memcpy(destboard,srcboard,SIZE*sizeof(int*));
 }
 
 void DeallocBoard(int** board)
 {
     if (presentnumber<capacity)
     {
-        StackBoards[presentnumber]=board;
         presentnumber-=1;
+        StackBoards[presentnumber]=board;
     }
     else
     {
-        int i;
-        for (i=0;i<SIZE;i++)
-            free(board[i]);
-        free(board);
+        printf("Dealloc failing stack\n");
     }
 }
 
@@ -213,7 +210,7 @@ int** DFSPart(int** board)
             for (j=0;(j<SIZE) && (found==0);j++)
             {
                 // ShowBoard(temp);
-                // printf("i = %d , j =%d, pres = %d\n",i,j,pres);
+                // printf("i = %d , j =%d, pres = %d stackno=%d \n",i,j,pres,presentnumber);
                 if (temp[i][j]==0)
                 {
                     found=1;
@@ -229,7 +226,7 @@ int** DFSPart(int** board)
                             pres+=1; 
                         }
                     }
-                    // DeallocBoard(temp);
+                    DeallocBoard(temp);
                 }
             }
         }
