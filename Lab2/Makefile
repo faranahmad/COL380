@@ -1,5 +1,5 @@
 all: sudoku
-	./sudoku 1 f5.txt
+	./sudoku 4 f2.txt
 
 sudoku: sudoku.c preprocess.c
 	gcc main.c sudoku.c -O3 -fopenmp -o sudoku
