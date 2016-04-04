@@ -4,7 +4,7 @@
 #include "sudoku.h"
 
 // #define SIZE 9
-#define GRIDSIZE 3
+#define GRIDSIZE MINIGRIDSIZE
 
 
 //

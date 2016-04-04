@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "sudoku.h"
 
 struct Node
 {
@@ -64,12 +64,13 @@ void RelinkUD(Node_t self)
 
 Node_t Node(int type,Node_t ctemp, int ident)
 {
-	Node_t temp;
+	Node_t temp = malloc(sizeof(struct Node));
 	temp->Left = temp;
 	temp->Right= temp;
 	temp->Up = temp;
 	temp->Down = temp;
 	temp->size=0;
+	temp->descl=ident;
 	if (type==0)
 	{
 		// Normal dancing node
@@ -109,7 +110,7 @@ void Uncover(Node_t x)
 	Node_t i,j;
 	for (i=x->Up; i!=x; i=i->Up)
 	{
-		for (j=x->Left; j!=i; j=j->Left)
+		for (j=i->Left; j!=i; j=j->Left)
 		{
 			j->ColumnNode->size++;
 			RelinkUD(j);
@@ -159,49 +160,140 @@ Node_t selectColumnNodeNth(int n)
 	return ret;
 }
 
-void Search(int k)
+void PrintBoard()
+{
+	printf("Board Config column wise\n");
+	Node_t temp;
+	for (temp=Header->Right; temp!= Header; temp=temp->Right)
+	{
+		Node_t d;
+		printf("%d ->>> ", temp->descl);
+		for (d=temp->Down; d!= temp; d=d->Down)
+		{
+			printf("%d -->", d->descl);
+			Node_t i;
+			// for (i=d->Right;i !=d; i = i->Right)
+			// {
+			// 	printf("%d --->", i->ColumnNode->descl);
+			// }
+			// printf("\n");
+		}
+		printf("\n");
+	}
+
+	printf("Board Config Row wise\n");
+	// Node_t temp;
+	for (temp=Header->Right; temp!= Header; temp=temp->Right)
+	{
+		Node_t d;
+		printf("%d ->>> ", temp->descl);
+		for (d=temp->Down; d!= temp; d=d->Down)
+		{
+			printf("%d <-> " , d->descl);
+			Node_t i;
+			printf("%d --->", d->ColumnNode->descl);
+			for (i=d->Right;i !=d; i = i->Right)
+			{
+				printf("%d --->", i->ColumnNode->descl);
+			}
+			printf("\n");
+		}
+		printf("\n");
+	}
+
+}
+
+
+void ShowAnswers()
+{
+	int i;
+	printf("Answers are of length %d \n",prevfilled);
+	for (i=0; i<prevfilled;i++)
+	{
+		printf("%d -> ", Answers[i]->descl);
+	}
+	printf("\n");
+}
+
+int Search(int k)
 {
 	if(Header->Right==Header)
 	{
 		//Handle Solution
-		printf("Solution moment\n");
+		// printf("Solution moment, should exit\n");
+		// PrintBoard();
+		// ShowAnswers();
+		return 1;
+		// printf("Still going on\n");
 	}
 	else
 	{
 		Node_t c;
 		c=selectComumnNodeHeuristic();
+		// printf("Best column to cover: %d\n",c->descl);
+		if (c->size==0)
+		{
+			// printf("Solution route terminated, time to backtrack\n");
+			return -1;
+		}
+		// printf("Covering up %d\n" , c->descl);
 		Cover(c);
+		// PrintBoard();
+		// printf("Covered up %d\n" , c->descl);
+		
+		// return 1;
 
 		Node_t r,j;
 		for (r=c->Down; r!= c; r=r->Down)
 		{
 			// answer.add(r);
+			// printf("Adding %d to answers at location %d \n", r->descl, prevfilled );
 			Answers[prevfilled]=r;
+			// return 0;
 			prevfilled+=1;
 			for (j=r->Right; j!=r; j=j->Right)
 			{
 				Cover(j->ColumnNode);
 			}
-
-			Search(k+1);
-
-			r= Answers[prevfilled-1];
-			prevfilled-=1;
-			// r= answer.remove(answer.size()-1);
-			c=r->ColumnNode;
-
-			for(j=r->Left;j!=r;j=j->Left)
+			// printf("Covered everything up\n");
+			// PrintBoard();
+			// return 0;
+			int x =Search(k+1);
+			if (x==-1)
 			{
-				Uncover(j->ColumnNode);
+				// printf("Recursive solution not found\n");
+				r= Answers[prevfilled-1];
+				// printf("Removing %d from answers\n", r->descl);
+				prevfilled-=1;
+				// r= answer.remove(answer.size()-1);
+				c=r->ColumnNode;
+				// return -89;
+
+				for(j=r->Left;j!=r;j=j->Left)
+				{
+					// printf("Unconvering for %d\n",j->ColumnNode->descl);
+					Uncover(j->ColumnNode);
+				}
+				// printf("Done uncovering\n");
+				// PrintBoard();
+				// ShowAnswers();
+				// return 98;
 			}
+			else if (x==1)
+			{
+				return 1;
+			}
+			// return 1;
 		}
 		Uncover(c);
+		// printf("Done with everything, something broke\n");
+		return -1;
 	}
 }
 
 
 
-Node_t MakeBoard(int** grid, int COLS, int ROWS)
+Node_t MakeBoard(int** grid, int ROWS, int COLS)
 {
 	Node_t headerNode = Node(1,NULL,-1);
 	Node_t columnNodes[COLS];
@@ -222,7 +314,7 @@ Node_t MakeBoard(int** grid, int COLS, int ROWS)
 			if (grid[i][j]==1)
 			{
 				Node_t col = columnNodes[j];
-				Node_t newNode = Node(0,col,0);
+				Node_t newNode = Node(0,col,i);
 				if (prev==NULL)
 				{
 					prev=newNode;
@@ -237,10 +329,106 @@ Node_t MakeBoard(int** grid, int COLS, int ROWS)
 	return headerNode;
 }
 
-int main(int argc, char const *argv[])
+int** solveSudoku(int** Board)
 {
-	/* code */
-	Answers=malloc(1000*sizeof(Node_t));
+	int columns = 4*SIZE*SIZE;
+	int rows = SIZE*SIZE*SIZE;
+	int szsq = SIZE*SIZE;
+	int **res = malloc(sizeof(int*)*rows);
+	int i,j,k;
+	for (i=0; i<rows; i++)
+	{
+		res[i]= malloc(sizeof(int)*columns);
+		for (j=0;j<columns;j++)
+		{
+			res[i][j]=0;
+		}
+	}
+	// res[i][0-SIZE*SIZE] is for 1 number constraint
+	// res[i][SIZE*SIZE-2] is for row constraints
+	// res[i][2SIZE*SIZE -3 ] is for column constraints
+	// res[i][3-4] is for grid constraints
+	// res[0-size*size] is for 0 in positions
+	// res[1-2] is for 1 in positions
+	//.
+	//.
+	// res[size-1  - size] is for size in positions
+	
+	for (i=0;i<SIZE;i++)
+	{
+		for (j=0; j<SIZE;j++)
+		{
+			for (k=0; k<SIZE; k++)
+			{
+				// Putting i in j,k on the board
+				// Row affected = szsq*i + SIZE*j + k
+				// Column affected = j*SIZE + k
+				// Column affected = szsq + i*SIZE + j
+				// Column affected = 2*szsq + i*SIZE + k
+				// Column affected = 3*szsq + i*SIZE + 3*(j/3) + k/3
+				if (Board[j][k]==0 || Board[j][k]==i+1)
+				{	
+					res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
+					res[szsq*i + SIZE*j + k][1*szsq+ i*SIZE + j] =1;
+					res[szsq*i + SIZE*j + k][2*szsq+ i*SIZE + k] =1;
+					res[szsq*i + SIZE*j + k][3*szsq+ i*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)] =1;
+				}
+			}
+		}
+	}
+	Header= MakeBoard(res,rows,columns);
+	// PrintBoard();
+	Answers=malloc(10000*sizeof(Node_t));
 
-	return 0;
+	int y= Search(0);
+	if (y==1)
+	{
+		for (y=0;y<prevfilled;y++)
+		{
+			int num = Answers[y]->descl;
+			int dig = 1+ (num/szsq);
+			int row = (num%szsq)/SIZE;
+			int col = (num%SIZE);
+			// printf("row: %d, col %d , num %d\n", row,col,dig);
+			Board[row][col]=dig;
+		}
+	}
+	return Board;	
 }
+
+
+
+
+// int main(int argc, char const *argv[])
+// {
+// 	/* code */
+// 	Answers=malloc(1000*sizeof(Node_t));
+
+// 	int g1[6][7] = {
+// 		{1,0,0,1,0,0,1},
+// 		{1,0,0,1,0,0,0},
+// 		{0,0,0,1,1,0,1},
+// 		{0,0,1,0,1,1,0},
+// 		{0,1,1,0,0,1,1},
+// 		{0,1,0,0,0,0,1}
+// 	};
+	
+// 	int g2[7][6] = {
+// 		{1,1,0,0,0,0},
+// 		{0,0,0,0,1,1},
+// 		{0,0,0,1,1,0},
+// 		{1,1,1,0,0,0},
+// 		{0,0,1,1,0,0},
+// 		{0,0,0,1,1,0},
+// 		{1,0,1,0,1,1}
+// 	};
+
+// 	// int **x;
+// 	// x = (int**) g1;
+// 	Header = MakeBoard(g1,6,7);
+// 	PrintBoard(Header);
+// 	int y=Search(0);
+// 	// printf("Returned\n");
+// 	// PrintBoard(Header);
+// 	return 0;
+// }
