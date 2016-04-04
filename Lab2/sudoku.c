@@ -32,7 +32,7 @@ int** AllocBoard(int type)
     }
     else
     {
-        printf("Allocating from stack\n");
+        // printf("Allocating from stack\n");
         int ** y= malloc(SIZE*sizeof(int*));
         int k;
         for (k=0; k<SIZE;k++)
@@ -198,6 +198,7 @@ int** DFSPart(int** board)
         if (pres==0)
         {
             printf("Stack became empty\n");
+            return board;
         }
         pres -=1;
         temp = dfsstack[pres];
