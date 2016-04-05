@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 #include "preprocess.c"
 #include "sudoku.h"
 
@@ -132,12 +133,17 @@ Node_t selectComumnNodeHeuristic()
 	Node_t ret,c;
 	for (c= Header->Right; c!=Header; c= c->Right)
 	{
+		if (min==0)
+		{
+			return ret;
+		}
 		if (c->size<min)
 		{
 			min= c->size;
 			ret= c;
 		}
 	}
+	// printf("Min value found: %d\n", min);
 	return ret;
 }
 
@@ -231,6 +237,7 @@ int Search(int k)
 	{
 		Node_t c;
 		c=selectComumnNodeHeuristic();
+		// c=selectColumnNodeRandom();
 		// printf("Best column to cover: %d\n",c->descl);
 		if (c->size==0)
 		{
@@ -238,6 +245,8 @@ int Search(int k)
 			return -1;
 		}
 		// printf("Covering up %d\n" , c->descl);
+		// printf("Init size %d\n", c->size);
+		// return 1;
 		Cover(c);
 		// PrintBoard();
 		// printf("Covered up %d\n" , c->descl);
@@ -245,7 +254,7 @@ int Search(int k)
 		// return 1;
 
 		Node_t r,j;
-		for (r=c->Down; r!= c; r=r->Down)
+		for (r=c->Up; r!= c; r=r->Up)
 		{
 			// answer.add(r);
 			// printf("Adding %d to answers at location %d \n", r->descl, prevfilled );
@@ -401,6 +410,7 @@ Node_t MakeSudokuNode(int** Board)
 
 	int num, posx,posy;
 	Node_t prev = NULL;
+	int temp12=0;
 	for (i=0; i<ROWS;i++)
 	{
 		// num = i/sqsz
@@ -413,6 +423,7 @@ Node_t MakeSudokuNode(int** Board)
 
 		if (Board[j][k]==0 || Board[j][k]==num+1)
 		{	
+			temp12++;
 			// res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
 			Node_t col = columnNodes[0*szsq+ j*SIZE + k];
 			Node_t newNode = Node(0,col,i);
@@ -446,19 +457,55 @@ Node_t MakeSudokuNode(int** Board)
 		}
 	}
 	headerNode->size=COLS;
+	printf("Number of rows %d out of %d \n",temp12 , ROWS);
 	return headerNode;
 }
+
+void ShowBoard(int** x)
+{
+    int i,j;
+    for (i=0; i<SIZE; i++)
+    {
+        for (j=0; j<SIZE; j++)
+        {
+            printf ("%d ", x[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+int CheckEqual(int** b1,int**b2)
+{
+	int i,j;
+	for (i=0;i<SIZE;i++)
+	{
+		for (j=0;j<SIZE;j++)
+		{
+			if (b1[i][j]!=b2[i][j])
+				return 0;
+		}
+	}
+	return 1;
+}
+
 
 int** solveSudoku(int** Board)
 {
 	double fstart= omp_get_wtime();
-	// int*** Possibilities= GetPossibilityMatrix(Board);
+	int*** Possibilities= GetPossibilityMatrix(Board);
     // ShowPossibilityMatrix(Possibilities);
-    // ShowBoard(board);
+    ShowBoard(Board);
     printf("Giving it to Faran\n");
-    // Board = FaranPart(Possibilities);
+    int**Board1 = FaranPart(Possibilities);
 
-    printf("Faran completed\n");
+    // printf("Faran completed %d, %d\n",Board,Board1);
+    while (CheckEqual(Board1,Board)==0)
+    {
+    	printf("Faran again\n");
+    	Board = Board1;
+    	Board1 = FaranPart(GetPossibilityMatrix(Board1));
+    }
+    ShowBoard(Board);
     
 	double strt = omp_get_wtime();
 
@@ -521,6 +568,8 @@ int** solveSudoku(int** Board)
 
 	// Header= MakeBoard(res,rows,columns);
 	Header =MakeSudokuNode(Board);
+
+	printf("Sudoku node done\n");
 
 	double f2 = omp_get_wtime();
 

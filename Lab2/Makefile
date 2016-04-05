@@ -1,7 +1,7 @@
 all: sudoku
 	./sudoku 4 sudoku16_input4
 
-sudoku: dancing.c
+sudoku: dancing.c sudoku.h
 	gcc main.c dancing.c -O3 -fopenmp -o sudoku
 
 debug: sudoku.c dancing.c

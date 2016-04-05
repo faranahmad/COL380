@@ -1,6 +1,5 @@
-#include <omp.h>
-#define SIZE 36
-#define MINIGRIDSIZE 6
+#define SIZE 9
+#define MINIGRIDSIZE 3
 
 int **readInput(char *);
 int isValid(int **, int **);
