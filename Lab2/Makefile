@@ -1,5 +1,5 @@
 all: sudoku
-	./sudoku 1 fsmall.txt
+	./sudoku 4 sudoku16_input1
 
 sudoku: dancing.c
 	gcc main.c dancing.c -O3 -fopenmp -o sudoku

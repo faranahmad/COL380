@@ -9,7 +9,7 @@ struct Node
 	struct Node* Up;
 	struct Node* Down;
 	struct Node* ColumnNode;
-	int iscolumn; // 0 for Dancing node, 1 for column
+	// int iscolumn; // 0 for Dancing node, 1 for column
 	int descl; // description for column node
 	int size;
 };
@@ -75,14 +75,14 @@ Node_t Node(int type,Node_t ctemp, int ident)
 	{
 		// Normal dancing node
 		temp->ColumnNode = ctemp;
-		temp->iscolumn=0;
+		// temp->iscolumn=0;
 	}
 	else if (type==1)
 	{
 		// Column Node
 		temp->ColumnNode=temp;
-		temp->iscolumn = 1;
-		temp->descl = ident;
+		// temp->iscolumn = 1;
+		// temp->descl = ident;
 		// temp->size = 0;
 	}
 	return temp;
@@ -335,14 +335,14 @@ int** solveSudoku(int** Board)
 	int rows = SIZE*SIZE*SIZE;
 	int szsq = SIZE*SIZE;
 	int **res = malloc(sizeof(int*)*rows);
-	int i,j,k;
-	for (i=0; i<rows; i++)
+	int i1,j1;
+	for (i1=0; i1<rows; i1++)
 	{
-		res[i]= malloc(sizeof(int)*columns);
-		for (j=0;j<columns;j++)
-		{
-			res[i][j]=0;
-		}
+		res[i1]= (int*) calloc(columns,sizeof(int));
+		// for (j1=0;j1<columns;j1++)
+		// {
+		// 	res[i1][j1]=0;
+		// }
 	}
 	// res[i][0-SIZE*SIZE] is for 1 number constraint
 	// res[i][SIZE*SIZE-2] is for row constraints
@@ -353,32 +353,41 @@ int** solveSudoku(int** Board)
 	//.
 	//.
 	// res[size-1  - size] is for size in positions
-	
-	for (i=0;i<SIZE;i++)
+	#pragma omp parallel
 	{
-		for (j=0; j<SIZE;j++)
+		printf("In parallel section %d\n",omp_get_thread_num());
+		int i;
+		for (i=0;i<SIZE;i++)
 		{
-			for (k=0; k<SIZE; k++)
+			if (i/SIZE==omp_get_thread_num())
 			{
-				// Putting i in j,k on the board
-				// Row affected = szsq*i + SIZE*j + k
-				// Column affected = j*SIZE + k
-				// Column affected = szsq + i*SIZE + j
-				// Column affected = 2*szsq + i*SIZE + k
-				// Column affected = 3*szsq + i*SIZE + 3*(j/3) + k/3
-				if (Board[j][k]==0 || Board[j][k]==i+1)
-				{	
-					res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
-					res[szsq*i + SIZE*j + k][1*szsq+ i*SIZE + j] =1;
-					res[szsq*i + SIZE*j + k][2*szsq+ i*SIZE + k] =1;
-					res[szsq*i + SIZE*j + k][3*szsq+ i*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)] =1;
+				int j;
+				for (j=0; j<SIZE;j++)
+				{
+					int k;
+					for (k=0; k<SIZE; k++)
+					{
+						// Putting i in j,k on the board
+						// Row affected = szsq*i + SIZE*j + k
+						// Column affected = j*SIZE + k
+						// Column affected = szsq + i*SIZE + j
+						// Column affected = 2*szsq + i*SIZE + k
+						// Column affected = 3*szsq + i*SIZE + 3*(j/3) + k/3
+						if (Board[j][k]==0 || Board[j][k]==i+1)
+						{	
+							res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
+							res[szsq*i + SIZE*j + k][1*szsq+ i*SIZE + j] =1;
+							res[szsq*i + SIZE*j + k][2*szsq+ i*SIZE + k] =1;
+							res[szsq*i + SIZE*j + k][3*szsq+ i*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)] =1;
+						}
+					}
 				}
 			}
 		}
 	}
 	Header= MakeBoard(res,rows,columns);
 	// PrintBoard();
-	Answers=malloc(10000*sizeof(Node_t));
+	Answers=malloc(1000*sizeof(Node_t));
 
 	int y= Search(0);
 	if (y==1)
