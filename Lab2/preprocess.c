@@ -4,10 +4,7 @@
 #include "sudoku.h"
 
 // #define SIZE 9
-<<<<<<< HEAD
 
-=======
->>>>>>> 35adb7ea7f794eeacbdb70d36a7e473ab69d545a
 #define GRIDSIZE MINIGRIDSIZE
 
 
@@ -93,7 +90,7 @@ int *** eliminate(int*** board)
 	return board;
 }
 
-<<<<<<< HEAD
+
 // cdint *** loneranger(int ***board)
 // {	
 // 	int k;
