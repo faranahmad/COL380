@@ -4,6 +4,10 @@
 #include "preprocess.c"
 #include "sudoku.h"
 
+extern int thread_count;
+
+int solved;
+
 struct Node
 {
 	struct Node* Left;
@@ -19,8 +23,12 @@ struct Node
 typedef struct Node* Node_t;
 
 Node_t Header;
+Node_t HeaderRev;
 Node_t* Answers;
+Node_t* AnswersRev;
 int prevfilled=0;
+int prevfilledRev=0;
+
 
 Node_t hookDown(Node_t self,Node_t n1)
 {
@@ -106,6 +114,22 @@ void Cover(Node_t x)
 	Header->size--;
 }
 
+void CoverRev(Node_t x)
+{
+	// For column node
+	UnlinkLR(x);
+	Node_t temp,temp1;
+	for (temp = x->Down; temp!= x;temp = temp->Down)
+	{
+		for (temp1 = temp->Right; temp1!=temp;temp1 = temp1->Right)
+		{
+			UnlinkUD(temp1);
+			temp1->ColumnNode->size--;
+		}
+	}
+	HeaderRev->size--;
+}
+
 void Uncover(Node_t x)
 {
 	// For column Node
@@ -122,16 +146,58 @@ void Uncover(Node_t x)
 	Header->size++;
 }
 
+void UncoverRev(Node_t x)
+{
+	// For column Node
+	Node_t i,j;
+	for (i=x->Up; i!=x; i=i->Up)
+	{
+		for (j=i->Left; j!=i; j=j->Left)
+		{
+			j->ColumnNode->size++;
+			RelinkUD(j);
+		}
+	}
+	RelinkLR(x);
+	HeaderRev->size++;
+}
+
 Node_t SelectColumnNodeNaive()
 {
 	return Header->Right;
 }
+
+Node_t SelectColumnNodeNaiveRev()
+{
+	return HeaderRev->Right;
+}
+
 
 Node_t selectComumnNodeHeuristic()
 {
 	int min=99999;
 	Node_t ret,c;
 	for (c= Header->Right; c!=Header; c= c->Right)
+	{
+		if (min==0)
+		{
+			return ret;
+		}
+		if (c->size<min)
+		{
+			min= c->size;
+			ret= c;
+		}
+	}
+	// printf("Min value found: %d\n", min);
+	return ret;
+}
+
+Node_t selectComumnNodeHeuristicRev()
+{
+	int min=99999;
+	Node_t ret,c;
+	for (c= HeaderRev->Right; c!=HeaderRev; c= c->Right)
 	{
 		if (min==0)
 		{
@@ -155,9 +221,29 @@ Node_t selectColumnNodeRandom()
 	return c;
 }
 
+Node_t selectColumnNodeRandomRev()
+{
+	Node_t ret,c;
+	c= HeaderRev->Right;
+	// TODO: Put in random
+	return c;
+}
+
 Node_t selectColumnNodeNth(int n)
 {
 	int go = n % Header->size;
+	Node_t ret;
+	int i;
+	for (i=0;i<go;i++)
+	{
+		ret= ret->Right;
+	}
+	return ret;
+}
+
+Node_t selectColumnNodeNthRev(int n)
+{
+	int go = n % HeaderRev->size;
 	Node_t ret;
 	int i;
 	for (i=0;i<go;i++)
@@ -224,12 +310,17 @@ void ShowAnswers()
 
 int Search(int k)
 {
+	if (solved==1)
+	{
+		return -2;
+	}
 	if(Header->Right==Header)
 	{
 		//Handle Solution
 		// printf("Solution moment, should exit\n");
 		// PrintBoard();
 		// ShowAnswers();
+		solved=1;
 		return 1;
 		// printf("Still going on\n");
 	}
@@ -289,6 +380,10 @@ int Search(int k)
 				// ShowAnswers();
 				// return 98;
 			}
+			else if(x==-2)
+			{
+				return -2;
+			}
 			else if (x==1)
 			{
 				return 1;
@@ -301,6 +396,65 @@ int Search(int k)
 	}
 }
 
+
+int SearchRev(int k)
+{
+	if(solved==1)
+	{
+		return -2;
+	}
+	if(HeaderRev->Right==HeaderRev)
+	{
+		solved=1;
+		return 1;
+	}
+	else
+	{
+		Node_t c;
+		c=selectComumnNodeHeuristicRev();
+		if (c->size==0)
+		{
+			return -1;
+		}
+		CoverRev(c);
+
+		Node_t r,j;
+		for (r=c->Down; r!= c; r=r->Down)
+		{
+			// answer.add(r);
+			// printf("Adding %d to answers at location %d \n", r->descl, prevfilled );
+			AnswersRev[prevfilledRev]=r;
+			// return 0;
+			prevfilledRev+=1;
+			for (j=r->Right; j!=r; j=j->Right)
+			{
+				CoverRev(j->ColumnNode);
+			}
+			int x =SearchRev(k+1);
+			if (x==-2)
+			{
+				return -2;
+			}
+			else if (x==-1)
+			{
+				r= AnswersRev[prevfilledRev-1];
+				prevfilledRev-=1;
+				c=r->ColumnNode;
+
+				for(j=r->Left;j!=r;j=j->Left)
+				{
+					UncoverRev(j->ColumnNode);
+				}
+			}
+			else if (x==1)
+			{
+				return 1;
+			}
+		}
+		UncoverRev(c);
+		return -1;
+	}
+}
 
 
 Node_t MakeBoard(int** grid, int ROWS, int COLS)
@@ -491,6 +645,8 @@ int CheckEqual(int** b1,int**b2)
 
 int** solveSudoku(int** Board)
 {
+	solved=-1;
+	int szsq = SIZE*SIZE;
 	double fstart= omp_get_wtime();
 	int*** Possibilities= GetPossibilityMatrix(Board);
     // ShowPossibilityMatrix(Possibilities);
@@ -505,100 +661,103 @@ int** solveSudoku(int** Board)
     	Board = Board1;
     	Board1 = FaranPart(GetPossibilityMatrix(Board1));
     }
-    ShowBoard(Board);
-    
+    // ShowBoard(Board);
+
 	double strt = omp_get_wtime();
 
-	// int columns = 4*SIZE*SIZE;
-	// int rows = SIZE*SIZE*SIZE;
-	int szsq = SIZE*SIZE;
-	// int **res = malloc(sizeof(int*)*rows);
-	// int i1,j1;
-	// for (i1=0; i1<rows; i1++)
-	// {
-	// 	res[i1]= (int*) calloc(columns,sizeof(int));
-	// 	// for (j1=0;j1<columns;j1++)
-	// 	// {
-	// 	// 	res[i1][j1]=0;
-	// 	// }
-	// }
-	// // res[i][0-SIZE*SIZE] is for 1 number constraint
-	// // res[i][SIZE*SIZE-2] is for row constraints
-	// // res[i][2SIZE*SIZE -3 ] is for column constraints
-	// // res[i][3-4] is for grid constraints
-	// // res[0-size*size] is for 0 in positions
-	// // res[1-2] is for 1 in positions
-	// //.
-	// //.
-	// // res[size-1  - size] is for size in positions
-	// #pragma omp parallel
-	// {
-	// 	printf("In parallel section %d\n",omp_get_thread_num());
-	// 	int i;
-	// 	for (i=0;i<SIZE;i++)
-	// 	{
-	// 		if (i/SIZE==omp_get_thread_num())
-	// 		{
-	// 			int j;
-	// 			for (j=0; j<SIZE;j++)
-	// 			{
-	// 				int k;
-	// 				for (k=0; k<SIZE; k++)
-	// 				{
-	// 					// Putting i in j,k on the board
-	// 					// Row affected = szsq*i + SIZE*j + k
-	// 					// Column affected = j*SIZE + k
-	// 					// Column affected = szsq + i*SIZE + j
-	// 					// Column affected = 2*szsq + i*SIZE + k
-	// 					// Column affected = 3*szsq + i*SIZE + 3*(j/3) + k/3
-	// 					if (Board[j][k]==0 || Board[j][k]==i+1)
-	// 					{	
-	// 						res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
-	// 						res[szsq*i + SIZE*j + k][1*szsq+ i*SIZE + j] =1;
-	// 						res[szsq*i + SIZE*j + k][2*szsq+ i*SIZE + k] =1;
-	// 						res[szsq*i + SIZE*j + k][3*szsq+ i*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)] =1;
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-	
-	double f1 = omp_get_wtime();
-
-	// Header= MakeBoard(res,rows,columns);
-	Header =MakeSudokuNode(Board);
-
-	printf("Sudoku node done\n");
-
-	double f2 = omp_get_wtime();
-
-	// PrintBoard();
-	Answers=malloc(1000*sizeof(Node_t));
-
-	int y= Search(0);
-
-	double f3 = omp_get_wtime();
-
-	if (y==1)
+	if (thread_count==1)
 	{
-		for (y=0;y<prevfilled;y++)
-		{
-			int num = Answers[y]->descl;
-			int dig = 1+ (num/szsq);
-			int row = (num%szsq)/SIZE;
-			int col = (num%SIZE);
-			// printf("row: %d, col %d , num %d\n", row,col,dig);
-			Board[row][col]=dig;
-		}
-	}
-	printf( " Faran Time: %e \n",strt-fstart );
-	printf( " Inititime: %e \n",f1-strt );
-	printf( " Making Board Time: %e \n",f2-f1 );
-	printf( " Solving Time: %e \n",f3-f2 );
-	// printf( " Inititime: %if \n",f1-strt );
+		Header =MakeSudokuNode(Board);
 
-	return Board;	
+		double f2 = omp_get_wtime();
+
+		// PrintBoard();
+		Answers=malloc(1000*sizeof(Node_t));
+		AnswersRev = malloc(1000*sizeof(Node_t));
+		int y= Search(0);
+
+		double f3 = omp_get_wtime();
+
+		if (y==1)
+		{
+			for (y=0;y<prevfilled;y++)
+			{
+				int num = Answers[y]->descl;
+				int dig = 1+ (num/szsq);
+				int row = (num%szsq)/SIZE;
+				int col = (num%SIZE);
+				// printf("row: %d, col %d , num %d\n", row,col,dig);
+				Board[row][col]=dig;
+			}
+		}
+		printf( " Faran Time: %e \n",strt-fstart );
+		// printf( " Inititime: %e \n",f1-strt );
+		printf( " Making Board Time: %e \n",f2-strt );
+		printf( " Solving Time: %e \n",f3-f2 );
+		// printf( " Inititime: %if \n",f1-strt );
+
+		return Board;
+	}
+	else
+	{
+		// More than 1 thread available. We will use 2
+		
+		double f2 = omp_get_wtime();
+
+		// PrintBoard();
+
+
+
+		#pragma omp parallel num_threads(2)
+		{
+			if (omp_get_thread_num()==1)
+			{
+				// Up solution
+				Answers=malloc(1000*sizeof(Node_t));
+				Header =MakeSudokuNode(Board);
+				int y= Search(0);
+				if (y==1)
+					printf("Solved by Up\n");
+			}
+			else
+			{
+				// Down Solution
+				AnswersRev = malloc(1000*sizeof(Node_t));
+				HeaderRev=MakeSudokuNode(Board1);
+				int z=SearchRev(0);
+				if (z==1)
+				{
+					printf("Solved by down\n");
+					Answers = AnswersRev;
+					prevfilled = prevfilledRev;
+				}
+			}
+			#pragma omp barrier
+		}
+		if (solved==1)
+		{
+			int y;
+			for (y=0;y<prevfilled;y++)
+			{
+				int num = Answers[y]->descl;
+				int dig = 1+ (num/szsq);
+				int row = (num%szsq)/SIZE;
+				int col = (num%SIZE);
+				// printf("row: %d, col %d , num %d\n", row,col,dig);
+				Board[row][col]=dig;
+			}			
+		}
+		double f3 = omp_get_wtime();
+
+		printf( " Faran Time: %e \n",strt-fstart );
+		// printf( " Inititime: %e \n",f1-strt );
+		printf( " Making Board Time: %e \n",f2-strt );
+		printf( " Solving Time: %e \n",f3-f2 );
+		// printf( " Inititime: %if \n",f1-strt );
+
+		return Board;
+	}
+    	
 }
 
 
