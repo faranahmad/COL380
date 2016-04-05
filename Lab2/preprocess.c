@@ -4,11 +4,8 @@
 #include "sudoku.h"
 
 // #define SIZE 9
-<<<<<<< HEAD
-#define GRIDSIZE 4
-=======
+
 #define GRIDSIZE MINIGRIDSIZE
->>>>>>> cbdd5e3adf71b247b06deba42bfa14bb0da7ac11
 
 
 //
@@ -93,135 +90,272 @@ int *** eliminate(int*** board)
 	return board;
 }
 
-int *** loneranger(int ***board)
-{	
-	int k;
-	int repeat = 1;
-	while(repeat == 1)
-	{
-		repeat = 0;
+// cdint *** loneranger(int ***board)
+// {	
+// 	int k;
+// 	int repeat = 1;
+// 	while(repeat == 1)
+// 	{
+// 		repeat = 0;
 	
-		for(k = 1; k <= SIZE ; k++)
-		{
-			int i;
-			#pragma omp parallel for 
+// 		for(k = 1; k <= SIZE ; k++)
+// 		{
+// 			int i;
+// 			#pragma omp parallel for 
 			
-				for(i = 0 ; i < SIZE ; i++)
-				{
-					int count = 0;
-					int t = 0;
-					int p = -1;
-					int r;
-					int j;
-					for(j = 0; j < SIZE ; j++)
-					{
-						if(board[i][j][0] == 0)
-						{
-							if(board[i][j][k] == 1)
-							{
-								if(count == 1)
-								{
-									p = 1;
-									break;
-								}
-								else
-								{
-									t = k;
-									r = j;
-									p = 0;
-									count += 1;
-								}
-							}
-						}
-					}
-					if(p == 0)
-					{
-						// printf("here %d %d %d\n",i,j,t);
-						repeat = 1;
-						updateboard(i,r,t,board);
-						board[i][r][0] = t;
-					}
+// 				for(i = 0 ; i < SIZE ; i++)
+// 				{
+// 					int count = 0;
+// 					int t = 0;
+// 					int p = -1;
+// 					int r;
+// 					int j;
+// 					for(j = 0; j < SIZE ; j++)
+// 					{
+// 						if(board[i][j][0] == 0)
+// 						{
+// 							if(board[i][j][k] == 1)
+// 							{
+// 								if(count == 1)
+// 								{
+// 									p = 1;
+// 									break;
+// 								}
+// 								else
+// 								{
+// 									t = k;
+// 									r = j;
+// 									p = 0;
+// 									count += 1;
+// 								}
+// 							}
+// 						}
+// 					}
+// 					if(p == 0)
+// 					{
+// 						// printf("here %d %d %d\n",i,j,t);
+// 						repeat = 1;
+// 						updateboard(i,r,t,board);
+// 						board[i][r][0] = t;
+// 					}
 
-				}
+// 				}
 			
-			#pragma omp parallel for 
+// 			#pragma omp parallel for 
 			
-				for(i = 0 ; i < SIZE ; i++)
-				{
-					int count = 0;
-					int t;
-					int p = -1;
-					int r;
-					int j;
-					for(j = 0; j < SIZE ; j++)
-					{
-						if(board[j][i][0] == 0)
-						{
-							if(board[j][i][k] == 1)
-							{
-								if(count == 1)
-								{
-									p = 1;
-									break;
-								}
-								else
-								{
-									t = k;
-									r = j;
-									p = 0;
-									count += 1;
-								}
-							}
-						}
-					}
+// 				for(i = 0 ; i < SIZE ; i++)
+// 				{
+// 					int count = 0;
+// 					int t;
+// 					int p = -1;
+// 					int r;
+// 					int j;
+// 					for(j = 0; j < SIZE ; j++)
+// 					{
+// 						if(board[j][i][0] == 0)
+// 						{
+// 							if(board[j][i][k] == 1)
+// 							{
+// 								if(count == 1)
+// 								{
+// 									p = 1;
+// 									break;
+// 								}
+// 								else
+// 								{
+// 									t = k;
+// 									r = j;
+// 									p = 0;
+// 									count += 1;
+// 								}
+// 							}
+// 						}
+// 					}
 
-					if(p == 0)
-					{
-						// printf("yoyoyo %d %d %d\n",r,i,t);
-						repeat = 1;
-						updateboard(r,i,t,board);
-						board[r][i][0] = t;
-					}
-				}
+// 					if(p == 0)
+// 					{
+// 						// printf("yoyoyo %d %d %d\n",r,i,t);
+// 						repeat = 1;
+// 						updateboard(r,i,t,board);
+// 						board[r][i][0] = t;
+// 					}
+// 				}
 			
-			#pragma omp parallel for 
+// 			#pragma omp parallel for 
 			
-				for(i = 0 ; i < SIZE ; i++)
-				{
-					int count = 0;
-					int t;
-					int u,r;
-					int j,l;
-					for(j = (i/GRIDSIZE)*(GRIDSIZE) ; j < (i/GRIDSIZE + 1)*(GRIDSIZE) ; j++)
-					{
-						for(l = (i%GRIDSIZE)*(GRIDSIZE) ; l < (i%GRIDSIZE + 1)*(GRIDSIZE) ; l++)
-						{
-							if((board[j][l][0] == 0))
-							{
-								if(board[j][l][k] == 1)
-								{
-									t = k;
-									u = j;
-									r = l;
-									count++;
-								}
-							}
-						}
-					}
-					if(count == 1)
-					{
-						// printf("yahan pe %d %d %d \n",u,r,t);
-						repeat = 1;
-						updateboard(u,r,t,board);
-						board[u][r][0] = t;
-					}
-				}		
-		}
-	}
+// 				for(i = 0 ; i < SIZE ; i++)
+// 				{
+// 					int count = 0;
+// 					int t;
+// 					int u,r;
+// 					int j,l;
+// 					for(j = (i/GRIDSIZE)*(GRIDSIZE) ; j < (i/GRIDSIZE + 1)*(GRIDSIZE) ; j++)
+// 					{
+// 						for(l = (i%GRIDSIZE)*(GRIDSIZE) ; l < (i%GRIDSIZE + 1)*(GRIDSIZE) ; l++)
+// 						{
+// 							if((board[j][l][0] == 0))
+// 							{
+// 								if(board[j][l][k] == 1)
+// 								{
+// 									t = k;
+// 									u = j;
+// 									r = l;
+// 									count++;
+// 								}
+// 							}
+// 						}
+// 					}
+// 					if(count == 1)
+// 					{
+// 						// printf("yahan pe %d %d %d \n",u,r,t);
+// 						repeat = 1;
+// 						updateboard(u,r,t,board);
+// 						board[u][r][0] = t;
+// 					}
+// 				}		
+// 		}
+// 	}
 
+// 	return board;
+	
+	
+// }
+
+
+int *** loneranger(int *** board)
+{
+	// int repeat = 1;
+	// while(repeat == 1)
+	// {
+	// 	repeat = 0;
+	// 	int i;
+	// 	#pragma omp parallel for
+	// 	for(i = 0;i < 3*SIZE;i++)
+	// 	{
+	// 		if(i < SIZE)
+	// 		{
+	// 			int j,l,k;
+	// 			// for(j = (i/GRIDSIZE)*GRIDSIZE;j < (i/GRIDSIZE+1)*GRIDSIZE;j++)
+	// 			// {
+	// 			// 	for(l = (i%GRIDSIZE)*GRIDSIZE;l < (i%GRIDSIZE + 1)*GRIDSIZE;l++)
+	// 			// 	{
+	// 					for(k = 1;k <= 10;k++)
+	// 					{
+	// 						int t,u,r,j1,l1;
+	// 						int count = 0;
+	// 						for(j1 = (i/GRIDSIZE)*(GRIDSIZE) ; j1 < (i/GRIDSIZE + 1)*(GRIDSIZE) ; j1++)
+	// 						{	
+	// 							for(l1 = (i%GRIDSIZE)*(GRIDSIZE) ; l1 < (i%GRIDSIZE + 1)*(GRIDSIZE) ; l1++)
+	// 							{
+	// 								if((board[j1][l1][0] == 0))
+	// 								{
+	// 									if(board[j1][l1][k] == 1)
+	// 									{
+	// 										t = k;
+	// 										u = j1;
+	// 										r = l1;
+	// 										count++;
+	// 									}
+	// 								}
+	// 							}
+	// 						}
+	// 						if(count == 1)
+	// 						{
+	// 							// printf("yahan pe %d %d %d \n",u,r,t);
+	// 							repeat = 1;
+	// 							updateboard(u,r,t,board);
+	// 							board[u][r][0] = t;
+	// 						}		
+	// 				// 	}
+	// 				// }
+	// 			}
+	// 			printf("yahan pe done till here \n");
+	// 		}
+	// 		else if(i < 2*SIZE)
+	// 		{
+	// 			int k;
+	// 			for(k = 1;k <=10;k++)
+	// 			{
+	// 				int count = 0;
+	// 				int t = 0;
+	// 				int p = -1;
+	// 				int r;
+	// 				int j;
+	// 				for(j = 0; j < SIZE ; j++)
+	// 				{
+	// 					if(board[i-SIZE][j][0] == 0)
+	// 					{
+	// 						if(board[i-SIZE][j][k] == 1)
+	// 						{
+	// 							if(count == 1)
+	// 							{
+	// 								p = 1;
+	// 								break;
+	// 							}
+	// 							else
+	// 							{
+	// 								t = k;
+	// 								r = j;
+	// 								p = 0;
+	// 								count += 1;
+	// 							}
+	// 						}
+	// 					}
+	// 				}
+	// 				if(p == 0)
+	// 				{
+	// 					// printf("here %d %d %d\n",i,j,t);
+	// 					repeat = 1;
+	// 					updateboard(i-SIZE,r,t,board);
+	// 					board[i-SIZE][r][0] = t;
+	// 				}
+	// 			}
+	// 			printf("yahan pe done till here 2 \n");	
+	// 		}
+	// 		else
+	// 		{
+	// 			int k;
+	// 			for(k = 1;k <= 10 ;k++)
+	// 			{
+	// 				int count = 0;
+	// 				int t;
+	// 				int p = -1;
+	// 				int r;
+	// 				int j;
+	// 				for(j = 0; j < SIZE ; j++)
+	// 				{
+	// 					if(board[j][i-2*SIZE][0] == 0)
+	// 					{
+	// 						if(board[j][i-2*SIZE][k] == 1)
+	// 						{
+	// 							if(count == 1)
+	// 							{
+	// 								p = 1;
+	// 								break;
+	// 							}
+	// 							else
+	// 							{
+	// 								t = k;
+	// 								r = j;
+	// 								p = 0;
+	// 								count += 1;
+	// 							}
+	// 						}
+	// 					}
+	// 				}
+
+	// 				if(p == 0)
+	// 				{
+	// 					// printf("yoyoyo %d %d %d\n",r,i,t);
+	// 					repeat = 1;
+	// 					updateboard(r,i,t,board);
+	// 					board[r][i][0] = t;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	return board;
-	
-	
 }
 
 
