@@ -4,11 +4,7 @@
 #include "sudoku.h"
 
 // #define SIZE 9
-<<<<<<< HEAD
-#define GRIDSIZE 4
-=======
 #define GRIDSIZE MINIGRIDSIZE
->>>>>>> cbdd5e3adf71b247b06deba42bfa14bb0da7ac11
 
 
 //
@@ -46,14 +42,14 @@ void updateboard(int i,int j,int k,int *** board)
 
 int *** eliminate(int*** board)
 {
-	
+
 	int i;
 	int repeat = 1;
 	//omp_set_num_threads(THREAD_NUM);
 	while(repeat == 1)
 	{
 		repeat = 0;
-		#pragma omp parallel for 
+		#pragma omp parallel for
 		for(i = 0 ; i < SIZE ; i++)
 		{
 			int j,k;
@@ -65,7 +61,7 @@ int *** eliminate(int*** board)
 					int t;
 					int p = 0;
 					for(k = 1 ; k <= SIZE ; k++)
-					{	
+					{
 						if(board[i][j][k] != 0)
 						{
 							if(count == 1)
@@ -94,18 +90,18 @@ int *** eliminate(int*** board)
 }
 
 int *** loneranger(int ***board)
-{	
+{
 	int k;
 	int repeat = 1;
 	while(repeat == 1)
 	{
 		repeat = 0;
-	
+
 		for(k = 1; k <= SIZE ; k++)
 		{
 			int i;
-			#pragma omp parallel for 
-			
+			#pragma omp parallel for
+
 				for(i = 0 ; i < SIZE ; i++)
 				{
 					int count = 0;
@@ -143,9 +139,9 @@ int *** loneranger(int ***board)
 					}
 
 				}
-			
-			#pragma omp parallel for 
-			
+
+			#pragma omp parallel for
+
 				for(i = 0 ; i < SIZE ; i++)
 				{
 					int count = 0;
@@ -183,9 +179,9 @@ int *** loneranger(int ***board)
 						board[r][i][0] = t;
 					}
 				}
-			
-			#pragma omp parallel for 
-			
+
+			#pragma omp parallel for
+
 				for(i = 0 ; i < SIZE ; i++)
 				{
 					int count = 0;
@@ -215,13 +211,13 @@ int *** loneranger(int ***board)
 						updateboard(u,r,t,board);
 						board[u][r][0] = t;
 					}
-				}		
+				}
 		}
 	}
 
 	return board;
-	
-	
+
+
 }
 
 
