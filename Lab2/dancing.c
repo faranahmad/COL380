@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "preprocess.c"
 #include "sudoku.h"
 
 struct Node
@@ -329,67 +330,207 @@ Node_t MakeBoard(int** grid, int ROWS, int COLS)
 	return headerNode;
 }
 
-int** solveSudoku(int** Board)
+
+
+
+int ***GetPossibilityMatrix(int** board)
 {
-	int columns = 4*SIZE*SIZE;
-	int rows = SIZE*SIZE*SIZE;
+    int ***x = (int***) malloc(SIZE*sizeof(int**));
+    int i,j,k,l;
+    
+    for (i=0;i<SIZE;i++)
+    {
+        x[i] = malloc((SIZE)*sizeof(int*));
+        for (j=0;j<SIZE;j++)
+        {
+            x[i][j]=malloc((SIZE+1)*sizeof(int));
+            x[i][j][0]=0;
+            for (k=1; k<=SIZE; k++)
+                x[i][j][k]=1;
+        }
+    }
+    for (i=0; i<SIZE;i++)
+    {
+        for (j=0; j<SIZE;j++)
+        {
+            if (board[i][j]>0)
+            {
+                // int k,l;
+                for (k=0; k<SIZE;k++)
+                {
+                    x[i][k][board[i][j]]=0;
+                    x[k][j][board[i][j]]=0;
+                }
+                int bx =i/MINIGRIDSIZE;
+                int by= j/MINIGRIDSIZE;
+                int m,n;
+                for (m=MINIGRIDSIZE*bx;m<MINIGRIDSIZE*(bx+1);m++)
+                {
+                    for (n=MINIGRIDSIZE*by;n<MINIGRIDSIZE*(1+by);n++)
+                    {
+                        x[m][n][board[i][j]]=0;
+                    }
+                }
+                for (m=1;m<=SIZE;m++)
+                {
+                    x[i][j][m]=0;    
+                }
+                x[i][j][0]=board[i][j];
+                x[i][j][board[i][j]]=1;
+            }
+        }
+    }
+    return x;
+}
+
+Node_t MakeSudokuNode(int** Board)
+{
+	Node_t headerNode = Node(1,NULL,-1);
 	int szsq = SIZE*SIZE;
-	int **res = malloc(sizeof(int*)*rows);
-	int i1,j1;
-	for (i1=0; i1<rows; i1++)
+	int COLS = 4*SIZE*SIZE;
+	int ROWS = SIZE*SIZE*SIZE;
+	Node_t columnNodes[COLS];
+	int i,j,k;
+	for (i=0;i<COLS;i++)
 	{
-		res[i1]= (int*) calloc(columns,sizeof(int));
-		// for (j1=0;j1<columns;j1++)
-		// {
-		// 	res[i1][j1]=0;
-		// }
+		Node_t n = Node(1,NULL,i);
+		columnNodes[i]=n;
+		headerNode = hookRight(headerNode,n);
 	}
-	// res[i][0-SIZE*SIZE] is for 1 number constraint
-	// res[i][SIZE*SIZE-2] is for row constraints
-	// res[i][2SIZE*SIZE -3 ] is for column constraints
-	// res[i][3-4] is for grid constraints
-	// res[0-size*size] is for 0 in positions
-	// res[1-2] is for 1 in positions
-	//.
-	//.
-	// res[size-1  - size] is for size in positions
-	#pragma omp parallel
+	headerNode = headerNode->Right->ColumnNode;
+
+	int num, posx,posy;
+	Node_t prev = NULL;
+	for (i=0; i<ROWS;i++)
 	{
-		printf("In parallel section %d\n",omp_get_thread_num());
-		int i;
-		for (i=0;i<SIZE;i++)
-		{
-			if (i/SIZE==omp_get_thread_num())
-			{
-				int j;
-				for (j=0; j<SIZE;j++)
-				{
-					int k;
-					for (k=0; k<SIZE; k++)
-					{
-						// Putting i in j,k on the board
-						// Row affected = szsq*i + SIZE*j + k
-						// Column affected = j*SIZE + k
-						// Column affected = szsq + i*SIZE + j
-						// Column affected = 2*szsq + i*SIZE + k
-						// Column affected = 3*szsq + i*SIZE + 3*(j/3) + k/3
-						if (Board[j][k]==0 || Board[j][k]==i+1)
-						{	
-							res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
-							res[szsq*i + SIZE*j + k][1*szsq+ i*SIZE + j] =1;
-							res[szsq*i + SIZE*j + k][2*szsq+ i*SIZE + k] =1;
-							res[szsq*i + SIZE*j + k][3*szsq+ i*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)] =1;
-						}
-					}
-				}
-			}
+		// num = i/sqsz
+		// pos = (i%sqsz)/SIZE , i%SIZE
+
+		num=i/szsq;
+		j=(i%szsq)/SIZE;
+		k=i%SIZE;
+
+
+		if (Board[j][k]==0 || Board[j][k]==num+1)
+		{	
+			// res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
+			Node_t col = columnNodes[0*szsq+ j*SIZE + k];
+			Node_t newNode = Node(0,col,i);
+			prev= newNode;
+			hookDown(col->Up,newNode);
+			prev=hookRight(prev,newNode);
+			col->size++;
+
+			// res[szsq*i + SIZE*j + k][1*szsq+ i*SIZE + j] =1;
+			col = columnNodes[1*szsq+ num*SIZE + j];
+			newNode = Node(0,col,i);
+			hookDown(col->Up,newNode);
+			prev=hookRight(prev,newNode);
+			col->size++;			
+
+			// res[szsq*i + SIZE*j + k][2*szsq+ i*SIZE + k] =1;
+			col = columnNodes[2*szsq+ num*SIZE + k];
+			newNode = Node(0,col,i);
+			// prev= newNode;
+			hookDown(col->Up,newNode);
+			prev=hookRight(prev,newNode);
+			col->size++;
+			
+			// res[szsq*i + SIZE*j + k][3*szsq+ i*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)] =1;
+			col = columnNodes[3*szsq+ num*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)];
+			newNode = Node(0,col,i);
+			// prev= newNode;
+			hookDown(col->Up,newNode);
+			prev=hookRight(prev,newNode);
+			col->size++;
 		}
 	}
-	Header= MakeBoard(res,rows,columns);
+	headerNode->size=COLS;
+	return headerNode;
+}
+
+int** solveSudoku(int** Board)
+{
+	double fstart= omp_get_wtime();
+	// int*** Possibilities= GetPossibilityMatrix(Board);
+    // ShowPossibilityMatrix(Possibilities);
+    // ShowBoard(board);
+    printf("Giving it to Faran\n");
+    // Board = FaranPart(Possibilities);
+
+    printf("Faran completed\n");
+    
+	double strt = omp_get_wtime();
+
+	// int columns = 4*SIZE*SIZE;
+	// int rows = SIZE*SIZE*SIZE;
+	int szsq = SIZE*SIZE;
+	// int **res = malloc(sizeof(int*)*rows);
+	// int i1,j1;
+	// for (i1=0; i1<rows; i1++)
+	// {
+	// 	res[i1]= (int*) calloc(columns,sizeof(int));
+	// 	// for (j1=0;j1<columns;j1++)
+	// 	// {
+	// 	// 	res[i1][j1]=0;
+	// 	// }
+	// }
+	// // res[i][0-SIZE*SIZE] is for 1 number constraint
+	// // res[i][SIZE*SIZE-2] is for row constraints
+	// // res[i][2SIZE*SIZE -3 ] is for column constraints
+	// // res[i][3-4] is for grid constraints
+	// // res[0-size*size] is for 0 in positions
+	// // res[1-2] is for 1 in positions
+	// //.
+	// //.
+	// // res[size-1  - size] is for size in positions
+	// #pragma omp parallel
+	// {
+	// 	printf("In parallel section %d\n",omp_get_thread_num());
+	// 	int i;
+	// 	for (i=0;i<SIZE;i++)
+	// 	{
+	// 		if (i/SIZE==omp_get_thread_num())
+	// 		{
+	// 			int j;
+	// 			for (j=0; j<SIZE;j++)
+	// 			{
+	// 				int k;
+	// 				for (k=0; k<SIZE; k++)
+	// 				{
+	// 					// Putting i in j,k on the board
+	// 					// Row affected = szsq*i + SIZE*j + k
+	// 					// Column affected = j*SIZE + k
+	// 					// Column affected = szsq + i*SIZE + j
+	// 					// Column affected = 2*szsq + i*SIZE + k
+	// 					// Column affected = 3*szsq + i*SIZE + 3*(j/3) + k/3
+	// 					if (Board[j][k]==0 || Board[j][k]==i+1)
+	// 					{	
+	// 						res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
+	// 						res[szsq*i + SIZE*j + k][1*szsq+ i*SIZE + j] =1;
+	// 						res[szsq*i + SIZE*j + k][2*szsq+ i*SIZE + k] =1;
+	// 						res[szsq*i + SIZE*j + k][3*szsq+ i*SIZE+ MINIGRIDSIZE*(j/MINIGRIDSIZE) + (k/MINIGRIDSIZE)] =1;
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+	
+	double f1 = omp_get_wtime();
+
+	// Header= MakeBoard(res,rows,columns);
+	Header =MakeSudokuNode(Board);
+
+	double f2 = omp_get_wtime();
+
 	// PrintBoard();
 	Answers=malloc(1000*sizeof(Node_t));
 
 	int y= Search(0);
+
+	double f3 = omp_get_wtime();
+
 	if (y==1)
 	{
 		for (y=0;y<prevfilled;y++)
@@ -402,6 +543,12 @@ int** solveSudoku(int** Board)
 			Board[row][col]=dig;
 		}
 	}
+	printf( " Faran Time: %e \n",strt-fstart );
+	printf( " Inititime: %e \n",f1-strt );
+	printf( " Making Board Time: %e \n",f2-f1 );
+	printf( " Solving Time: %e \n",f3-f2 );
+	// printf( " Inititime: %if \n",f1-strt );
+
 	return Board;	
 }
 
