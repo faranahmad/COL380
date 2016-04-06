@@ -73,7 +73,7 @@ int *** eliminate(int*** board)
 				if(board[i][j][0] == 0)
 				{
 					int count = 0;
-					int t;
+					int t=0;
 					int p = 0;
 					for(k = 1 ; k <= SIZE ; k++)
 					{
@@ -249,7 +249,7 @@ int *** loneranger(int *** board)
 		{
 			if(i < SIZE)
 			{
-				int j,l,k;
+				int k;
 				// for(j = (i/GRIDSIZE)*GRIDSIZE;j < (i/GRIDSIZE+1)*GRIDSIZE;j++)
 				// {
 				// 	for(l = (i%GRIDSIZE)*GRIDSIZE;l < (i%GRIDSIZE + 1)*GRIDSIZE;l++)
@@ -726,7 +726,8 @@ Node_t SelectColumnNodeNaiveRev()
 Node_t selectComumnNodeHeuristic()
 {
 	int min=99999;
-	Node_t ret,c;
+	Node_t ret=NULL;
+	Node_t c;
 	for (c= Header->Right; c!=Header; c= c->Right)
 	{
 		if (min==0)
@@ -763,45 +764,45 @@ Node_t selectComumnNodeHeuristicRev()
 	return ret;
 }
 
-Node_t selectColumnNodeRandom()
-{
-	Node_t ret,c;
-	c= Header->Right;
-	// TODO: Put in random
-	return c;
-}
+// Node_t selectColumnNodeRandom()
+// {
+// 	Node_t c;
+// 	c= Header->Right;
+// 	// TODO: Put in random
+// 	return c;
+// }
 
-Node_t selectColumnNodeRandomRev()
-{
-	Node_t ret,c;
-	c= HeaderRev->Right;
-	// TODO: Put in random
-	return c;
-}
+// Node_t selectColumnNodeRandomRev()
+// {
+// 	Node_t c;
+// 	c= HeaderRev->Right;
+// 	// TODO: Put in random
+// 	return c;
+// }
 
-Node_t selectColumnNodeNth(int n)
-{
-	int go = n % Header->size;
-	Node_t ret;
-	int i;
-	for (i=0;i<go;i++)
-	{
-		ret= ret->Right;
-	}
-	return ret;
-}
+// Node_t selectColumnNodeNth(int n)
+// {
+// 	int go = n % Header->size;
+// 	Node_t ret;
+// 	int i;
+// 	for (i=0;i<go;i++)
+// 	{
+// 		ret= ret->Right;
+// 	}
+// 	return ret;
+// }
 
-Node_t selectColumnNodeNthRev(int n)
-{
-	int go = n % HeaderRev->size;
-	Node_t ret;
-	int i;
-	for (i=0;i<go;i++)
-	{
-		ret= ret->Right;
-	}
-	return ret;
-}
+// Node_t selectColumnNodeNthRev(int n)
+// {
+// 	int go = n % HeaderRev->size;
+// 	Node_t ret;
+// 	int i;
+// 	for (i=0;i<go;i++)
+// 	{
+// 		ret= ret->Right;
+// 	}
+// 	return ret;
+// }
 
 void PrintBoard()
 {
@@ -814,7 +815,7 @@ void PrintBoard()
 		for (d=temp->Down; d!= temp; d=d->Down)
 		{
 			printf("%d -->", d->descl);
-			Node_t i;
+			// Node_t i;
 			// for (i=d->Right;i !=d; i = i->Right)
 			// {
 			// 	printf("%d --->", i->ColumnNode->descl);
@@ -1049,7 +1050,7 @@ Node_t MakeBoard(int** grid, int ROWS, int COLS)
 int ***GetPossibilityMatrix(int** board)
 {
     int ***x = (int***) malloc(SIZE*sizeof(int**));
-    int i,j,k,l;
+    int i,j,k;
     
     for (i=0;i<SIZE;i++)
     {
@@ -1112,9 +1113,9 @@ Node_t MakeSudokuNode(int** Board)
 	}
 	headerNode = headerNode->Right->ColumnNode;
 
-	int num, posx,posy;
+	int num;
 	Node_t prev = NULL;
-	int temp12=0;
+	// int temp12=0;
 	for (i=0; i<ROWS;i++)
 	{
 		// num = i/sqsz
@@ -1127,7 +1128,7 @@ Node_t MakeSudokuNode(int** Board)
 
 		if (Board[j][k]==0 || Board[j][k]==num+1)
 		{	
-			temp12++;
+			// temp12++;
 			// res[szsq*i + SIZE*j + k][0*szsq+ j*SIZE + k] =1;
 			Node_t col = columnNodes[0*szsq+ j*SIZE + k];
 			Node_t newNode = Node(0,col,i);
@@ -1161,7 +1162,7 @@ Node_t MakeSudokuNode(int** Board)
 		}
 	}
 	headerNode->size=COLS;
-	printf("Number of rows %d out of %d \n",temp12 , ROWS);
+	// printf("Number of rows %d out of %d \n",temp12 , ROWS);
 	return headerNode;
 }
 
@@ -1197,36 +1198,36 @@ int** solveSudoku(int** Board)
 {
 	solved=-1;
 	int szsq = SIZE*SIZE;
-	double fstart= omp_get_wtime();
+	// double fstart= omp_get_wtime();
 	int*** Possibilities= GetPossibilityMatrix(Board);
     // ShowPossibilityMatrix(Possibilities);
-    ShowBoard(Board);
-    printf("Giving it to Faran\n");
+    // ShowBoard(Board);
+    // printf("Giving it to Faran\n");
     int**Board1 = FaranPart(Possibilities);
 
     // printf("Faran completed %d, %d\n",Board,Board1);
     while (CheckEqual(Board1,Board)==0)
     {
-    	printf("Faran again\n");
+    	// printf("Faran again\n");
     	Board = Board1;
     	Board1 = FaranPart(GetPossibilityMatrix(Board1));
     }
     // ShowBoard(Board);
 
-	double strt = omp_get_wtime();
+	// double strt = omp_get_wtime();
 
 	if (thread_count==1)
 	{
 		Header =MakeSudokuNode(Board);
 
-		double f2 = omp_get_wtime();
+		// double f2 = omp_get_wtime();
 
 		// PrintBoard();
 		Answers=malloc(1000*sizeof(Node_t));
 		AnswersRev = malloc(1000*sizeof(Node_t));
 		int y= Search(0);
 
-		double f3 = omp_get_wtime();
+		// double f3 = omp_get_wtime();
 
 		if (y==1)
 		{
@@ -1240,10 +1241,10 @@ int** solveSudoku(int** Board)
 				Board[row][col]=dig;
 			}
 		}
-		printf( " Faran Time: %e \n",strt-fstart );
+		// printf( " Faran Time: %e \n",strt-fstart );
 		// printf( " Inititime: %e \n",f1-strt );
-		printf( " Making Board Time: %e \n",f2-strt );
-		printf( " Solving Time: %e \n",f3-f2 );
+		// printf( " Making Board Time: %e \n",f2-strt );
+		// printf( " Solving Time: %e \n",f3-f2 );
 		// printf( " Inititime: %if \n",f1-strt );
 
 		return Board;
@@ -1252,7 +1253,7 @@ int** solveSudoku(int** Board)
 	{
 		// More than 1 thread available. We will use 2
 		
-		double f2 = omp_get_wtime();
+		// double f2 = omp_get_wtime();
 
 		// PrintBoard();
 
@@ -1268,7 +1269,7 @@ int** solveSudoku(int** Board)
 				int y= Search(0);
 				if (y==1)
 				{
-					printf("Solved by Up\n");
+					// printf("Solved by Up\n");
 					Final= Answers;
 					finalans = prevfilled;
 				}
@@ -1282,7 +1283,7 @@ int** solveSudoku(int** Board)
 				int z=SearchRev(0);
 				if (z==1)
 				{
-					printf("Solved by down\n");
+					// printf("Solved by down\n");
 					Final = AnswersRev;
 					finalans = prevfilledRev;
 				}
@@ -1302,12 +1303,12 @@ int** solveSudoku(int** Board)
 				Board[row][col]=dig;
 			}			
 		}
-		double f3 = omp_get_wtime();
+		// double f3 = omp_get_wtime();
 
-		printf( " Faran Time: %e \n",strt-fstart );
+		// printf( " Faran Time: %e \n",strt-fstart );
 		// printf( " Inititime: %e \n",f1-strt );
-		printf( " Making Board Time: %e \n",f2-strt );
-		printf( " Solving Time: %e \n",f3-f2 );
+		// printf( " Making Board Time: %e \n",f2-strt );
+		// printf( " Solving Time: %e \n",f3-f2 );
 		// printf( " Inititime: %if \n",f1-strt );
 
 		return Board;
