@@ -1229,8 +1229,8 @@ int** solveSudoku(int** Board)
 		// double f2 = omp_get_wtime();
 
 		// PrintBoard();
-		Answers=malloc(1000*sizeof(Node_t));
-		AnswersRev = malloc(1000*sizeof(Node_t));
+		Answers=malloc(szsq*sizeof(Node_t));
+		// AnswersRev = malloc(1000*sizeof(Node_t));
 		int y= Search(0);
 
 		// double f3 = omp_get_wtime();
@@ -1270,9 +1270,10 @@ int** solveSudoku(int** Board)
 			if (omp_get_thread_num()==1)
 			{
 				// Up solution
-				Answers=malloc(1000*sizeof(Node_t));
+				Answers=malloc(szsq*sizeof(Node_t));
 				Header =MakeSudokuNode(Board);
 				int y= Search(0);
+				// printf("Up returned %d\n", y);
 				if (y==1)
 				{
 					// printf("Solved by Up\n");
@@ -1288,9 +1289,10 @@ int** solveSudoku(int** Board)
 			else
 			{
 				// Down Solution
-				AnswersRev = malloc(1000*sizeof(Node_t));
+				AnswersRev = malloc(szsq*sizeof(Node_t));
 				HeaderRev=MakeSudokuNode(Board1);
 				int z=SearchRev(0);
+				// printf("Down returned %d\n", z);
 				if (z==1)
 				{
 					// printf("Solved by down\n");

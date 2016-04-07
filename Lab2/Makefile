@@ -3,8 +3,8 @@
 all: sudoku
 	# ./sudoku 10 input25big.txt
 	#./sudoku 10 sudoku16_input1
-	./sudoku 1 sudoku9_input5
-
+	# ./sudoku 1 sudoku9_input5
+	./sudoku 10 inp36.txt
 
 sudoku: sudoku.c sudoku.h
 	gcc -Wall main.c sudoku.c -O3 -fopenmp -o sudoku
