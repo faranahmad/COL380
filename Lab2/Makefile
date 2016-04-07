@@ -1,5 +1,5 @@
-all: sudoku
-	./sudoku 1 input25big.txt
+all: sudoku 
+	./sudoku 1 sudoku9_input5
 
 sudoku: dancing.c sudoku.h
 	gcc main.c dancing.c -O3 -fopenmp -o sudoku

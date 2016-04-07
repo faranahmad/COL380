@@ -50,7 +50,7 @@ int *** eliminate(int*** board)
 	while(repeat == 1)
 	{
 		repeat = 0;
-		#pragma omp parallel for
+		#pragma omp parallel for 
 		for(i = 0 ; i < SIZE ; i++)
 		{
 			int j,k;
@@ -230,7 +230,7 @@ int *** loneranger(int *** board)
 	{
 		repeat = 0;
 		int i;
-		#pragma omp parallel for
+		#pragma omp parallel for 
 		for(i = 0;i < 3*SIZE;i++)
 		{
 			if(i < SIZE)
