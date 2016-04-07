@@ -1202,13 +1202,14 @@ int** solveSudoku(int** Board)
 
 	int szsq = SIZE*SIZE;
 	// double fstart= omp_get_wtime();
-	int*** Possibilities= GetPossibilityMatrix(Board);
+	// int*** Possibilities= GetPossibilityMatrix(Board);
     // ShowPossibilityMatrix(Possibilities);
     // ShowBoard(Board);
     // printf("Giving it to Faran\n");
     // printf("Giving to faran\n");
-    int**Board1 = FaranPart(Possibilities);
-    Board=Board1;
+    // int**Board1 = FaranPart(Possibilities);
+    // Board=Board1;
+    int **Board1=Board;
     // printf("Faran completed %d, %d\n",Board,Board1);
     // while (CheckEqual(Board1,Board)==0)
     // {
@@ -1280,7 +1281,7 @@ int** solveSudoku(int** Board)
 				}
 				else if (y==-1)
 				{
-					solved==-1;
+					solved=-1;
 				}
 
 			}
