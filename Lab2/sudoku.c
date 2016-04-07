@@ -60,7 +60,7 @@ int *** eliminate(int*** board)
 
 	int i;
 	int repeat = 1;
-	//omp_set_num_threads(THREAD_NUM);
+	omp_set_num_threads(1);
 	while(repeat == 1)
 	{
 		repeat = 0;
@@ -240,6 +240,7 @@ int *** eliminate(int*** board)
 int *** loneranger(int *** board)
 {
 	int repeat = 1;
+	omp_set_num_threads(1);
 	while(repeat == 1)
 	{
 		repeat = 0;
@@ -861,7 +862,7 @@ void ShowAnswers()
 
 int Search(int k)
 {
-	if (solved==1)
+	if (solved!=0)
 	{
 		return -2;
 	}
@@ -950,7 +951,7 @@ int Search(int k)
 
 int SearchRev(int k)
 {
-	if(solved==1)
+	if(solved!=0)
 	{
 		return -2;
 	}
@@ -1063,6 +1064,7 @@ int ***GetPossibilityMatrix(int** board)
                 x[i][j][k]=1;
         }
     }
+    
     for (i=0; i<SIZE;i++)
     {
         for (j=0; j<SIZE;j++)
@@ -1196,23 +1198,25 @@ int CheckEqual(int** b1,int**b2)
 
 int** solveSudoku(int** Board)
 {
-	solved=-1;
+	solved=0;
+
 	int szsq = SIZE*SIZE;
 	// double fstart= omp_get_wtime();
 	int*** Possibilities= GetPossibilityMatrix(Board);
     // ShowPossibilityMatrix(Possibilities);
     // ShowBoard(Board);
     // printf("Giving it to Faran\n");
-    printf("Giving to faran\n");
+    // printf("Giving to faran\n");
     int**Board1 = FaranPart(Possibilities);
-    printf("Faran completed %d, %d\n",Board,Board1);
-    while (CheckEqual(Board1,Board)==0)
-    {
-    	printf("Faran again\n");
-    	Board = Board1;
-    	Board1 = FaranPart(GetPossibilityMatrix(Board1));
-    }
-    printf("Faran completed\n");
+    Board=Board1;
+    // printf("Faran completed %d, %d\n",Board,Board1);
+    // while (CheckEqual(Board1,Board)==0)
+    // {
+    // 	// printf("Faran again\n");
+    // 	Board = Board1;
+    // 	Board1 = FaranPart(GetPossibilityMatrix(Board1));
+    // }
+    // printf("Faran completed\n");
     // ShowBoard(Board);
 
 	// double strt = omp_get_wtime();
@@ -1259,7 +1263,7 @@ int** solveSudoku(int** Board)
 		// PrintBoard();
 
 
-
+		omp_set_num_threads(2);
 		#pragma omp parallel num_threads(2)
 		{
 			if (omp_get_thread_num()==1)
@@ -1274,6 +1278,10 @@ int** solveSudoku(int** Board)
 					Final= Answers;
 					finalans = prevfilled;
 				}
+				else if (y==-1)
+				{
+					solved==-1;
+				}
 
 			}
 			else
@@ -1287,6 +1295,10 @@ int** solveSudoku(int** Board)
 					// printf("Solved by down\n");
 					Final = AnswersRev;
 					finalans = prevfilledRev;
+				}
+				else if(z==-1)
+				{
+					solved=-1;
 				}
 			}
 			#pragma omp barrier
@@ -1304,6 +1316,10 @@ int** solveSudoku(int** Board)
 				Board[row][col]=dig;
 			}			
 		}
+		// else if (solved==-1)
+		// {
+
+		// }
 		// double f3 = omp_get_wtime();
 
 		// printf( " Faran Time: %e \n",strt-fstart );
