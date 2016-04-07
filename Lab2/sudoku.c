@@ -1203,15 +1203,16 @@ int** solveSudoku(int** Board)
     // ShowPossibilityMatrix(Possibilities);
     // ShowBoard(Board);
     // printf("Giving it to Faran\n");
+    printf("Giving to faran\n");
     int**Board1 = FaranPart(Possibilities);
-
-    // printf("Faran completed %d, %d\n",Board,Board1);
+    printf("Faran completed %d, %d\n",Board,Board1);
     while (CheckEqual(Board1,Board)==0)
     {
-    	// printf("Faran again\n");
+    	printf("Faran again\n");
     	Board = Board1;
     	Board1 = FaranPart(GetPossibilityMatrix(Board1));
     }
+    printf("Faran completed\n");
     // ShowBoard(Board);
 
 	// double strt = omp_get_wtime();
