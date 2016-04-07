@@ -1,0 +1,507 @@
+/*2013CS10212_2013CS10258*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+#include <omp.h>
+#include "sudoku.h"
+
+#define LL long long
+extern int thread_count;
+#define FOR(i,N) for(i=0;i<N;i++)
+
+struct _cell
+{
+	int value;
+};
+typedef struct _cell Cell ;
+
+
+struct _board
+{
+	Cell arr[SIZE][SIZE];
+	int fill_count;
+	LL row_used[SIZE];
+	LL col_used[SIZE];
+	LL grid_used[SIZE];
+};
+typedef struct _board Board;
+
+inline int grid_id(int i, int j){
+	return (i/MINIGRIDSIZE)*MINIGRIDSIZE + j/MINIGRIDSIZE;
+}
+inline LL used_vals(int i, int j,Board *board){
+	return (board->grid_used[grid_id(i,j)] | board->row_used[i] | board->col_used[j]); 
+}
+void print_valid(int i, int j, Board *board){
+	
+	int used = used_vals(i,j,board);
+	LL k;
+	FOR(k,SIZE){
+		if(!(used & (1LL<<k))) printf("%lld ",k+1);
+	}
+	printf("\n");
+}
+
+struct _stack
+{
+	Board** st_array;
+	int top;
+	long long pop_count;
+	omp_lock_t lock;
+};
+
+typedef struct _stack Stack;
+
+
+
+Stack global_stack;
+
+
+
+Board* Pop(Stack *st)
+{
+	Board *res = NULL;
+	if(st->top >= 0)
+	{	
+		res = st->st_array[st->top--];
+		st->pop_count++;
+	}
+	return res;
+}
+
+
+void Push(Board* new_bd , Stack *st)
+{	
+	assert(new_bd !=NULL);
+	Board* nbd= (Board*)malloc(sizeof(Board));
+	*nbd = *new_bd;
+	
+	st->st_array[st->top+1] = nbd;
+	st->top += 1;
+}
+
+
+
+
+int** getOutput(Board* bd)
+{
+	int i,j;
+	int** conv_bd = (int**)malloc(SIZE*sizeof(int*));
+	FOR(i,SIZE) conv_bd[i]= (int*)malloc(SIZE*sizeof(int));
+	
+	FOR(i,SIZE)
+	{
+		FOR(j,SIZE)
+		{
+			conv_bd[i][j] = bd->arr[i][j].value ;
+		}
+	}
+	return conv_bd;
+}
+
+
+void allocStack(int MAX_SIZE, Stack* st)
+{
+	st->top = -1;
+	st->st_array = (Board**)malloc(MAX_SIZE*sizeof(Board*));
+	omp_init_lock(&st->lock);
+}
+
+void printBoard(Board *bd){
+	int i,j;
+	FOR(i,SIZE){
+		FOR(j,SIZE){
+			printf("%d ",bd->arr[i][j].value);
+		}
+		printf("\n");
+	}
+}
+void updateBoard(int i , int j , int new_val , Board* bd)
+{
+	//assert(bd->arr[i][j].value == 0);
+	int old_val = bd->arr[i][j].value;
+	if(new_val == old_val) return;
+	if(new_val > 0 && old_val == 0) bd->fill_count++;
+	else if(new_val == 0 && old_val > 0) bd->fill_count--;
+	
+	bd->arr[i][j].value = new_val;
+	
+	int gid = grid_id(i,j);
+	// update the used vals of row,col,grid
+	LL mask;
+	if(new_val > 0){
+		mask = 1LL<<(new_val-1);
+		bd->row_used[i] |= mask;
+		bd->col_used[j] |= mask;
+		bd->grid_used[gid] |= mask;
+	}
+	if(old_val > 0){
+		mask = 1LL<<(old_val-1);
+		mask = ((~mask) & ((1LL<<SIZE)-1));
+		bd->row_used[i] &= mask;
+		bd->col_used[j] &= mask;
+		bd->grid_used[gid] &= mask;	
+	}
+}
+
+void getBoard(int** bd, Board* conv_bd)
+{
+	conv_bd->fill_count=0;
+	int i,j;
+	FOR(i,SIZE)
+	{
+		conv_bd->row_used[i] = 0;
+		conv_bd->col_used[i] = 0;
+		conv_bd->grid_used[i] = 0;
+	}
+	FOR(i,SIZE)
+	{
+		FOR(j,SIZE)
+		{	
+			updateBoard(i,j,bd[i][j],conv_bd);
+		}
+	}
+}
+Board *copyBoard(Board *bd){
+	assert(bd);
+	Board* new_bd = (Board*)malloc(sizeof(Board));
+	*new_bd = *bd;
+	return new_bd;
+}
+int eliminate(Board *board){
+	int flag1 = 1;
+	int i,j;
+	FOR(i,SIZE)
+	{
+		FOR(j,SIZE)
+		{
+			if(board->arr[i][j].value != 0) continue;
+			
+			//getValidVals(i,j,valid_moves,board);
+			LL used = used_vals(i,j,board);
+			
+			int singleton, cnt = __builtin_popcountll(used);
+			if(cnt == SIZE-1){ 
+				singleton = __builtin_ffsll(~used);
+				updateBoard(i,j,singleton,board);
+				flag1=0;
+			}
+		}
+	}
+	return (flag1 == 0);
+}
+
+int lone_ranger(Board *board){
+	int flag1 = 1;
+	int i,j;
+	int count_array[SIZE];
+	int last_array[SIZE];
+	memset(count_array,0,SIZE*sizeof(int));
+	memset(last_array,0,SIZE*sizeof(int));
+	//traversal in i
+	FOR(i,SIZE)
+	{
+		
+		
+		FOR(j,SIZE)
+		{
+			if(board->arr[i][j].value != 0) continue;
+			
+			LL used = used_vals(i,j,board);
+			int k;
+			FOR(k,SIZE)
+			{
+				if(!(used & (1LL<<k)))
+				{
+					count_array[k]++;
+					last_array[k] = j;
+				}
+			}
+		}
+		int l;
+		FOR(l,SIZE){
+			if(count_array[l]==1) 
+			{
+				
+				updateBoard(i,last_array[l],l+1,board);
+				flag1=0;
+			}
+			count_array[l] = 0;
+			last_array[l] = 0;
+		}
+	}
+	//traversal in j
+	FOR(i,SIZE)
+	{
+		
+		FOR(j,SIZE)
+		{
+			if(board->arr[j][i].value != 0) continue;
+			
+			LL used = used_vals(j,i,board);
+			int k;
+			FOR(k,SIZE)
+			{
+				if(!(used & (1LL<<k)))
+				{
+					count_array[k]++;
+					last_array[k] = j;
+				}
+			}
+		}
+		int l;
+		FOR(l,SIZE)
+		{
+			if(count_array[l]==1) 
+			{
+				updateBoard(last_array[l],i,l+1,board);
+				flag1=0;
+			}
+			count_array[l] = 0;
+			last_array[l] = 0;
+		}
+	}
+
+	//traversal inside box
+	FOR(i,SIZE)
+	{
+		
+		FOR(j,SIZE)
+		{
+			int i1 = i/MINIGRIDSIZE*MINIGRIDSIZE + j/MINIGRIDSIZE;
+			int j1 = i%MINIGRIDSIZE*MINIGRIDSIZE + j%MINIGRIDSIZE;
+			if(board->arr[i1][j1].value != 0) continue;		
+			LL used = used_vals(i1,j1,board);
+			int k;
+			FOR(k,SIZE)
+			{
+				if(!(used & (1LL<<k)))
+				{
+					count_array[k]++;
+					last_array[k] = j;
+				}
+			}
+		}
+		int l;
+		FOR(l,SIZE)
+		{
+			if(count_array[l]==1) 
+			{
+
+				int i2 = i/MINIGRIDSIZE*MINIGRIDSIZE + last_array[l]/MINIGRIDSIZE;
+				int j2 = i%MINIGRIDSIZE*MINIGRIDSIZE + last_array[l]%MINIGRIDSIZE;
+				updateBoard(i2,j2,l+1,board);
+				flag1=0;
+			}
+			count_array[l] = 0;
+			last_array[l] = 0;
+		}
+	}
+	return (flag1 == 0);
+}
+
+
+//Heuristic Prune - Checks on the basis of all the possibilites whether this board will be pruned later
+int prune(Board *board){
+
+	int flag1 = 1;
+	int i,j;
+	LL check = (1LL<<SIZE)-1;
+	FOR(i,SIZE)
+	{
+		LL all_used1 = 0,all_used2 = 0,all_used3 = 0;
+		FOR(j,SIZE)
+		{
+			if(board->arr[i][j].value == 0){ 
+				LL used = used_vals(i,j,board);
+				all_used1 |= ~used;
+			}
+			if(board->arr[j][i].value == 0){ 
+			
+				LL used = used_vals(j,i,board);
+				all_used2 |= ~used;
+			}
+			int i1 = i/MINIGRIDSIZE*MINIGRIDSIZE + j/MINIGRIDSIZE;
+			int j1 = i%MINIGRIDSIZE*MINIGRIDSIZE + j%MINIGRIDSIZE;
+			if(board->arr[i1][j1].value == 0){ 
+				LL used = used_vals(i1,j1,board);
+				all_used3 |= ~used;
+			}
+		}
+		all_used1 |= board->row_used[i];
+		all_used2 |= board->col_used[i];
+		all_used3 |= board->grid_used[i];
+		
+		if((all_used1 & check) != check) return 1;
+		if((all_used2 & check) != check) return 1;
+		if((all_used3 & check) != check) return 1;
+	}
+
+	
+	return 0;
+}
+int getWork(Board *init_bd, Board** work_queue,int max_size,int *_start){
+	int start = 0, end = 0;
+	work_queue[start] = init_bd;
+	end++;
+	int work_queue_size = 1;
+	while(work_queue_size > 0 && work_queue_size < thread_count){
+    	Board *curr_board = work_queue[start];
+    	if(curr_board->fill_count == SIZE*SIZE) 
+      		break;
+      	work_queue[start] = 0;
+      	work_queue_size--;
+      	start = (start+1)%max_size;
+    	int i,j;
+    	int flag = 0;
+    	FOR(i,SIZE)
+		{
+			FOR(j,SIZE)
+			{
+				if(curr_board->arr[i][j].value) continue;
+				int k;
+				LL used = used_vals(i,j,curr_board);
+				FOR(k,SIZE)
+				{
+					if(!(used & (1LL<<k)))
+					{
+						updateBoard(i,j,k+1,curr_board);
+						Board *bd = copyBoard(curr_board);
+						work_queue[end] = bd;
+						end = (end+1)%max_size;
+						work_queue_size++;
+						updateBoard(i,j,0,curr_board);
+					}
+				}
+				flag = 1;
+				break;
+			}
+			if(flag) break;
+		}
+      free(curr_board);
+   }
+   *_start = start;
+   return work_queue_size;
+}
+LL pruned = 0;
+int global_solved = 0;
+Board *solveSerial(Stack *work_stack, Board *init_bd){
+	Board *solution = NULL;
+	Push(init_bd,work_stack);
+	while(work_stack->top >= 0 && !global_solved)
+	{
+
+		Board *curr_board = Pop(work_stack);
+		assert(curr_board);
+		while(eliminate(curr_board) || lone_ranger(curr_board));
+		if(curr_board->fill_count== SIZE*SIZE){
+			printf("Found it!!\n");
+			solution = curr_board;
+			break;
+		}
+		int i,j,flag = 0;
+		int x = prune(curr_board);//, x1 = prune1(curr_board);
+		// if(x1 != x){
+		// 	printf("%d %d\n",x,x1);
+		// 	printBoard(curr_board);
+		// 	printf("%lld %lld\n",curr_board->row_used[6] & (1<<5),curr_board->col_used[14]);
+		// 	exit(1);
+		// }
+		//if(x) pruned++;
+		if(x==0)
+		{
+			FOR(i,SIZE)
+			{
+				FOR(j,SIZE)
+				{
+					if(curr_board->arr[i][j].value) continue;
+					int k;
+					LL  used = used_vals(i,j,curr_board);
+					FOR(k,SIZE)
+					{
+						if(!(used & (1LL << k)))
+						{
+							updateBoard(i,j,k+1,curr_board);
+							Push(curr_board,work_stack);
+							updateBoard(i,j,0,curr_board);
+						}
+					}
+					flag = 1;
+					break;
+				}
+				if(flag) break;
+			}
+		}
+
+		free(curr_board);
+		curr_board=NULL;
+	}
+	//while(work_stack->top >= 0)
+	//	free(Pop(work_stack));
+	return solution;
+}
+
+int **solveSudoku(int ** input){
+
+	// TODO set the desited thread_count here
+	
+	Board* init_board = (Board*)malloc(sizeof(Board));
+	getBoard(input,init_board);
+	
+	Board *solution = NULL;
+	int solved = 0;
+	while(eliminate(init_board) || lone_ranger(init_board));
+	// fill in the work queue
+	if(init_board->fill_count == SIZE*SIZE) return getOutput(init_board);
+    if(SIZE == 9){
+		thread_count = 1;
+	}
+	else{
+		thread_count = (thread_count > 4)?4:thread_count;
+	}
+	printf("After initial transformation, %d empty\n",init_board->fill_count);
+	int max_size = 10000;
+	Board ** work_queue = (Board**)malloc(sizeof(Board*)*max_size);
+	int start;
+	int work_queue_size = getWork(init_board,work_queue,max_size,&start);
+	printf("Work queue size: %d\n",work_queue_size);
+
+	Stack *work_stack = (Stack*)malloc(sizeof(Stack)*thread_count);
+	int i;
+	FOR(i,thread_count){
+		allocStack(100000,work_stack+i);
+	}
+
+	#pragma omp parallel for schedule(dynamic) num_threads(thread_count)
+	for(i = 0 ; i < work_queue_size ; i++){
+		if(solved) continue;
+		printf("tid : %d,  i: %d\n",omp_get_thread_num(),i);
+		Board *bd = solveSerial(&work_stack[omp_get_thread_num()],work_queue[((start+i)%max_size)]);
+		if(bd){
+			#pragma omp critical
+			solution = bd;
+			solved = 1;
+			global_solved = 1;
+		}
+	}
+			
+	// TODO: free memory maybe? not important if program going to exit soon, but not sure what will happen during testing.	
+	//FOR(i,thread_count)
+	//	printf("stack : %d , pop_count: %lld\n",i,work_stack[i].pop_count);
+	
+
+	//printf("Not Implemented\n");
+	//printf("Pruned : %d Popped: %lld\n",prune_count,global_stack.pop_count);
+	//printf("Pruned %lld\n",pruned);
+	if(solution) 
+	{
+		printf("SOLVED!!!\n");
+		return getOutput(solution);
+	}
+	else
+	{
+		printf("NO SOLUTION EXISTS !!!\n");
+		return input;
+	}
+}

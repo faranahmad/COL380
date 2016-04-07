@@ -6,6 +6,9 @@ all: sudoku
 	# ./sudoku 1 sudoku9_input5
 	./sudoku 10 inp36.txt
 
+ts: ts.c sudoku.h
+	gcc main.c ts.c -O3 -fopenmp -o ts
+
 sudoku: sudoku.c sudoku.h
 	gcc -Wall main.c sudoku.c -O3 -fopenmp -o sudoku
 
