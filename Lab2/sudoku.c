@@ -74,7 +74,7 @@ int *** eliminate(int*** board)
 				{
 					int count = 0;
 					int t=0;
-					int p = 0;
+					int p = -1;
 					for(k = 1 ; k <= SIZE ; k++)
 					{
 						if(board[i][j][k] != 0)
