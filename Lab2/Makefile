@@ -12,6 +12,14 @@ ts: ts.c sudoku.h
 sudoku: sudoku.c sudoku.h
 	gcc -Wall main.c sudoku.c -O3 -fopenmp -o sudoku
 
+sudoku1: sudoku1.c sudoku.h
+	gcc -Wall main.c sudoku1.c -O3 -fopenmp -o sudoku1
+
+attempt2: attempt2.c sudoku.h
+	gcc  main.c attempt2.c -O3 -fopenmp -o attempt2
+	./attempt2 1 sudoku9_input1
+
+
 debug: sudoku.c dancing.c
 	gcc main.c dancing.c -g -fopenmp -o debug
 	gdb debug
@@ -24,4 +32,4 @@ debug: sudoku.c dancing.c
 # 	gdb debug
 
 clean:
-	rm -rf sudoku debug 
+	rm -rf sudoku debug attempt2 

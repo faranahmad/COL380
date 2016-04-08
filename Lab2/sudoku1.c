@@ -274,15 +274,15 @@ int** solveSudoku(int** board)
     {
         StackBoards[i]=AllocBoard(1);
     }
-    printf("Size: %d\n",SIZE);
+    // printf("Size: %d\n",SIZE);
     int*** Possibilities= GetPossibilityMatrix(board);
-    ShowPossibilityMatrix(Possibilities);
+    // ShowPossibilityMatrix(Possibilities);
     ShowBoard(board);
     printf("Giving it to Faran\n");
     board = FaranPart(Possibilities);
 
     printf("Faran completed\n");
-    ShowBoard(board);
+    // ShowBoard(board);
     board = DFSPart(board);
     return board;
 }
