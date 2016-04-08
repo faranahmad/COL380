@@ -10,7 +10,7 @@ ts: ts.c sudoku.h
 	gcc main.c ts.c -O3 -fopenmp -o ts
 
 sudoku: sudoku.c sudoku.h
-	gcc -Wall main.c sudoku.c -O3 -fopenmp -o sudoku
+	gcc -Wall main.c sudoku.c -O3  -fopenmp -o sudoku
 
 sudoku1: sudoku1.c sudoku.h
 	gcc -Wall main.c sudoku1.c -O3 -fopenmp -o sudoku1

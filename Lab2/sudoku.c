@@ -1628,7 +1628,7 @@ int CheckValid(Board_t x)
 		}
 	}
 	long long pos1 = GetPossibilities(x,0,6);
-	printf("Value of pop count at 0, 6 %d\n",__builtin_popcountll(pos1));
+	printf("Value of pop count at 0, 6 %d %lld\n",__builtin_popcountll(pos1),pos1);
 	return 1;
 }
 
@@ -1641,11 +1641,12 @@ Board_t DFSPart(Board_t inp)
 	CopyBoard(inp,temp);
 	dfsstack[pres]=temp;
 	pres=1;
-	int i,j,k,l,m;
+	int i,j,k,m;
+	long long l;
 	long long possib;
 	while(1)
 	{
-		printf("Len of stack %d\n", pres);
+		// printf("Len of stack %d\n", pres);
 		if (pres==0)
 		{
 			printf("Stack is empty\n");
@@ -1654,18 +1655,18 @@ Board_t DFSPart(Board_t inp)
 
 		pres-=1;
 		temp = dfsstack[pres];
-		if (CheckValid(temp)==0)
-		{
-			printf("INVLAID\n");
-			exit(1);
-		}
+		// if (CheckValid(temp)==0)
+		// {
+		// 	printf("INVLAID\n");
+		// 	exit(1);
+		// }
 		m=Simplify(temp);
-		if (CheckValid(temp)==0)
-		{
-			printf("INVLAID SIMPLIFY\n");
-			exit(1);
-		}
-		printf("Simplified board %d\n",m);
+		// if (CheckValid(temp)==0)
+		// {
+		// 	printf("INVLAID SIMPLIFY\n");
+		// 	exit(1);
+		// }
+		// printf("Simplified board %d\n",m);
 		// printf("Simplified board\n");
 		// ShowBoard(temp);
 		if (CheckFinished(temp))
@@ -1685,23 +1686,29 @@ Board_t DFSPart(Board_t inp)
 					if (temp->board[i][j]==0)
 					{
 						l = GetPossibilities(temp,i,j);
+						// CheckValid(temp);
 						k = SIZE - __builtin_popcountll(l);
 						if (k && (k<min) )
 						{
-							if (k<0)
-							{
-								if (CheckValid(temp)==0)
-								{
-									printf("INVALID\n");
-									exit(1);
-								}
-								printf("%d,%d %lld\n",i,j,l);
-								printf("pop count %d\n",__builtin_popcountll(l));
-								int_to_bin(l);
-								ShowBoard1(temp);
-								exit(0);
-							}
-							printf("pop count %d\n",__builtin_popcountll(l));
+							// if (k<0)
+							// {
+							// 	if (CheckValid(temp)==0)
+							// 	{
+							// 		printf("INVALID\n");
+							// 		exit(1);
+							// 	}
+							// 	printf("%d,%d %lld %d\n",i,j,l,__builtin_popcountll(l));
+								
+							// 	l = GetPossibilities(temp,i,j);
+							// 	CheckValid(temp);
+							// 	k = SIZE - __builtin_popcountll(l);
+							// 	printf("pop count %d\n",__builtin_popcountll(l));
+								
+							// 	// int_to_bin(l);
+							// 	ShowBoard1(temp);
+							// 	exit(0);
+							// }
+							// printf("pop count %d\n",__builtin_popcountll(l));
 							min=k;
 							mini=i;
 							minj=j;
@@ -1710,7 +1717,7 @@ Board_t DFSPart(Board_t inp)
 					}
 				}
 			}
-			printf("Min value obtained %d\n",min);
+			// printf("Min value obtained %d\n",min);
 			if  (min<999999)
 			{ 
 				// printf("Expanding position %d, %d with %d\n", mini,minj,min);
@@ -1749,11 +1756,12 @@ int DFSPartThread(Board_t inp,Board_t ans)
 	CopyBoard(inp,temp);
 	dfsstack[pres]=temp;
 	pres=1;
-	int i,j,k,l,m;
+	int i,j,k,m;
+	long long l;
 	long long possib;
 	while(1)
 	{
-		printf("Len of stack %d\n",pres);
+		// printf("Len of stack %d\n",pres);
 		if (GlobalSolved==1)
 		{
 			return -2;
@@ -1767,7 +1775,7 @@ int DFSPartThread(Board_t inp,Board_t ans)
 		pres-=1;
 		temp = dfsstack[pres];
 		m=Simplify(temp);
-		printf("Simplified board %d\n",m);
+		// printf("Simplified board %d\n",m);
 		// ShowBoard(temp);
 		if (CheckFinished(temp))
 		{
@@ -1850,11 +1858,11 @@ int** solveSudoku9(int ** board)
 	// return board;
 	// printf("Starting\n");
 	Board_t y = GenerateBoard(board);
-	if (CheckValid(y)==0)
-	{	
-		printf("GENERATED INCORRECT\n");
-		exit(1);
-	}
+	// if (CheckValid(y)==0)
+	// {	
+	// 	printf("GENERATED INCORRECT\n");
+	// 	exit(1);
+	// }
 	// printf("Generated\n");
 	// Simplify(y);
 	y=DFSPart(y);
@@ -2077,13 +2085,11 @@ int **GenerateGrid()
 
 int** solveSudoku(int** Board)
 {
-	int **temp = GenerateGrid();
 	// for  
-	int **temp1 = GenerateGrid();
 	int solvedby;
-	int  **temp2 = GenerateGrid();
 	if (SIZE>=25)
 	{
+		int **temp = GenerateGrid();
 		if (thread_count==1)
 		{
 			return solveSudoku9(Board);
@@ -2091,6 +2097,7 @@ int** solveSudoku(int** Board)
 		}
 		else if (thread_count==2)
 		{
+			int **temp1 = GenerateGrid();
 			#pragma omp parallel num_threads(2)
 			{
 				if (omp_get_thread_num()==0)
@@ -2143,6 +2150,8 @@ int** solveSudoku(int** Board)
 		}
 		else
 		{
+			int **temp1 = GenerateGrid();
+			int **temp2 = GenerateGrid();
 			#pragma omp parallel num_threads(3)
 			{
 				if (omp_get_thread_num()==0)
