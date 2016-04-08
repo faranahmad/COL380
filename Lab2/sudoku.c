@@ -1239,7 +1239,7 @@ int Lasts[SIZE];
 
 void int_to_bin(long long k)
 {
-	long long remainder,quotient;
+	long long quotient;
 
     int binaryNumber[200],i=1,j;
 
@@ -1259,6 +1259,7 @@ void int_to_bin(long long k)
     printf("\n");
 }
 
+
 Board_t AllocBoard(int type)
 {
 	if ((capacity>=presentnumber) && (type==0))
@@ -1271,6 +1272,18 @@ Board_t AllocBoard(int type)
         else
         {
         	StackBoards[presentnumber] = malloc(sizeof(Board));
+        	int i,j;
+        	for (i=0; i<SIZE;i++)
+        	{
+        		for (j=0;j<SIZE;j++)
+        		{
+        			StackBoards[presentnumber]->board[i][j]=0;
+        		}
+        		StackBoards[presentnumber]->rows[i]=0;
+        		StackBoards[presentnumber]->columns[i]=0;
+        		StackBoards[presentnumber]->grids[i]=0;
+
+        	}
         	presentnumber+=1;
         	return StackBoards[presentnumber-1];
         }
@@ -1284,15 +1297,19 @@ Board_t AllocBoard(int type)
 
 void CopyBoard(Board_t srcboard,Board_t destboard)
 {
-	memcpy(destboard,srcboard,sizeof(Board));
-    // int i,j;
-    // for (i=0; i<SIZE;i++)
-    // {
-    //     for (j=0; j<SIZE; j++)
-    //     {
-    //         destboard[i][j]=srcboard[i][j];
-    //     }
-    // }
+	// memcpy(destboard,srcboard,sizeof(Board));
+    int i,j;
+    destboard->remaining=srcboard->remaining;
+    for (i=0; i<SIZE;i++)
+    {
+        for (j=0; j<SIZE; j++)
+        {
+            destboard->board[i][j]=srcboard->board[i][j];
+        }
+        destboard->rows[i]=srcboard->rows[i];
+        destboard->columns[i]=srcboard->columns[i];
+        destboard->grids[i]=srcboard->grids[i];
+    }
 }
 
 void DeallocBoard(Board_t board)
@@ -1317,10 +1334,39 @@ void InsertBoard(Board_t b, int num, int x, int y)
 	b->board[x][y]=num;
 	b->remaining--;
 	long long m =1;
+	long long limt = 1;
+	limt = limt << SIZE;
+	if (num>SIZE || num==0)
+	{
+		printf("Trying to insert something huge and bad %d\n", num);
+	}
 	long long temp = m << (num-1);
+	if (__builtin_ffsll(temp)>SIZE)
+	{
+		printf("Something bad is happening in temp part\n");
+	}
 	b->rows[x] |= temp;
 	b->columns[y] |= temp;
 	b->grids[(x/MINIGRIDSIZE)*MINIGRIDSIZE + y/MINIGRIDSIZE] |= temp;
+	if (__builtin_popcountll(b->rows[x]) >SIZE)
+	{
+		printf("Something bad happened in row part\n");
+	}	
+	if (__builtin_popcountll(b->columns[y]) >SIZE)
+	{
+		printf("Something bad happened in row part\n");
+	}	
+	if (__builtin_popcountll(b->grids[(x/MINIGRIDSIZE)*MINIGRIDSIZE + y/MINIGRIDSIZE]) >SIZE)
+	{
+		printf("Something bad happened in row part\n");
+	}
+	if (b->rows[x]>limt)
+		printf("Something bad in row value\n");
+	if (b->columns[y]>limt)
+		printf("Something bad in row value\n");
+	if (b->grids[(x/MINIGRIDSIZE)*MINIGRIDSIZE + y/MINIGRIDSIZE]>limt)
+		printf("Something bad in row value\n");
+
 }
 
 void ShowBoard1(Board_t x)
@@ -1566,6 +1612,26 @@ int Simplify(Board_t x)
 	return y;
 }
 
+
+int CheckValid(Board_t x)
+{
+	int i,j;
+	for (i=0;i<SIZE;i++)
+	{
+		for (j=0;j<SIZE;j++)
+		{
+			long long pos1 = GetPossibilities(x,i,j);
+			if (__builtin_popcountll(pos1) > SIZE)
+			{
+				return 0;
+			}
+		}
+	}
+	long long pos1 = GetPossibilities(x,0,6);
+	printf("Value of pop count at 0, 6 %d\n",__builtin_popcountll(pos1));
+	return 1;
+}
+
 Board_t DFSPart(Board_t inp)
 {
 	int n1= capacity;
@@ -1579,14 +1645,27 @@ Board_t DFSPart(Board_t inp)
 	long long possib;
 	while(1)
 	{
+		printf("Len of stack %d\n", pres);
 		if (pres==0)
 		{
 			printf("Stack is empty\n");
 			return inp;
 		}
+
 		pres-=1;
 		temp = dfsstack[pres];
+		if (CheckValid(temp)==0)
+		{
+			printf("INVLAID\n");
+			exit(1);
+		}
 		m=Simplify(temp);
+		if (CheckValid(temp)==0)
+		{
+			printf("INVLAID SIMPLIFY\n");
+			exit(1);
+		}
+		printf("Simplified board %d\n",m);
 		// printf("Simplified board\n");
 		// ShowBoard(temp);
 		if (CheckFinished(temp))
@@ -1609,6 +1688,20 @@ Board_t DFSPart(Board_t inp)
 						k = SIZE - __builtin_popcountll(l);
 						if (k && (k<min) )
 						{
+							if (k<0)
+							{
+								if (CheckValid(temp)==0)
+								{
+									printf("INVALID\n");
+									exit(1);
+								}
+								printf("%d,%d %lld\n",i,j,l);
+								printf("pop count %d\n",__builtin_popcountll(l));
+								int_to_bin(l);
+								ShowBoard1(temp);
+								exit(0);
+							}
+							printf("pop count %d\n",__builtin_popcountll(l));
 							min=k;
 							mini=i;
 							minj=j;
@@ -1617,6 +1710,7 @@ Board_t DFSPart(Board_t inp)
 					}
 				}
 			}
+			printf("Min value obtained %d\n",min);
 			if  (min<999999)
 			{ 
 				// printf("Expanding position %d, %d with %d\n", mini,minj,min);
@@ -1640,7 +1734,7 @@ Board_t DFSPart(Board_t inp)
 			}
 		}
 		// return temp;
-		DeallocBoard(temp);
+		// DeallocBoard(temp);
 	}
 	return inp;
 }
@@ -1659,6 +1753,7 @@ int DFSPartThread(Board_t inp,Board_t ans)
 	long long possib;
 	while(1)
 	{
+		printf("Len of stack %d\n",pres);
 		if (GlobalSolved==1)
 		{
 			return -2;
@@ -1672,7 +1767,7 @@ int DFSPartThread(Board_t inp,Board_t ans)
 		pres-=1;
 		temp = dfsstack[pres];
 		m=Simplify(temp);
-		// printf("Simplified board\n");
+		printf("Simplified board %d\n",m);
 		// ShowBoard(temp);
 		if (CheckFinished(temp))
 		{
@@ -1755,6 +1850,11 @@ int** solveSudoku9(int ** board)
 	// return board;
 	// printf("Starting\n");
 	Board_t y = GenerateBoard(board);
+	if (CheckValid(y)==0)
+	{	
+		printf("GENERATED INCORRECT\n");
+		exit(1);
+	}
 	// printf("Generated\n");
 	// Simplify(y);
 	y=DFSPart(y);
@@ -1987,6 +2087,7 @@ int** solveSudoku(int** Board)
 		if (thread_count==1)
 		{
 			return solveSudoku9(Board);
+			// return solveDLX(Board);
 		}
 		else if (thread_count==2)
 		{
